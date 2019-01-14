@@ -1,0 +1,23 @@
+# file containing sequences of known homologs
+# $HAHA
+INPUT_GENEFAM=$ORfa
+SUFFIX_ID=OR
+WORK_DIR=$base/$species
+BLAST_DIR=/usr/local/home/lschrader/bin/
+NUMPROC=10
+# blast database
+DATABASE=$genomeFa
+EXPECT_VAL=1e-3
+# min distane between HSPs for them to be considered separately
+MIN_HSP_DIST=500
+# max overlap between HSPs for them to be considered separately
+MAX_OVERLAP_HSP=45
+# min distance between "genes" for them to be considered separately
+MIN_GENE_DIST=1000
+MIN_OVERLAP_GENE=0
+# percentage of highest scoring HSPs used to calculate the average bit-score (cutoff)
+TOP_PERC_IN=75
+# any HSP with bit-score lower than this percentage of the cutoff will be filtered
+PERC_CUTOFF=25
+# genomic region to extend on each side of the chained HSPs
+PGENE_EXT=10000

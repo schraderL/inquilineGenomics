@@ -1,0 +1,12 @@
+#BED File containing potential loci
+BED=$species.bed
+#target genome
+GENOME=$genomeFa
+#target folder for target loci fasta
+OUTFOLDER=$species.Loci
+#query fasta file
+QUERY=$ORfa
+#out folder for query fasta  
+OUTQUERY=ORFa
+#range in which the sequence around the hit should be scanned with exonerate
+RANGE=5000
