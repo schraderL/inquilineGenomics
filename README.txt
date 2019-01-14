@@ -84,8 +84,11 @@ I used orthofinder to identify orthologs and orthogroups
 # OR annotations
 #####################
 
+./ORevolution/OR.annotation.pipeline-18-11-19.sh
+
 # all scripts for the OR annotation pipeline are found at
 ./ORevolution
+
 
 $base/ORs/
 
