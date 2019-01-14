@@ -1,0 +1,1 @@
+/Users/lukas/sciebo/inquilineGenomics18/ORevolution/scripts/OR.annotation.pipeline-18-07-10.sh

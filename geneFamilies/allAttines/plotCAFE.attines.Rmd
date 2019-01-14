@@ -1,0 +1,217 @@
+---
+title: 'CAFE kmeans clustering and plotting of results'
+output:
+  html_document:
+    df_print: paged
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+```{r include=FALSE}
+###########################################################################
+#K means clustering
+###########################################################################
+rate<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/rates.CAFE.R1.tsv",sep="\t")
+#rate<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/rates.CAFE.R2.tsv",sep="\t")
+#rate<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/tmp/rates.CAFE.run4.tsv",sep="\t")
+
+as.matrix(rate[2:15,c(3,5)])
+kclusters<-list()
+for (i in 1:14){
+  #kclusters[[i]]<-kmeans(as.matrix(rate[2:15,c(3,5)]),i, algorithm = "MacQueen")
+  #kclusters[[i]]<-kmeans(as.matrix(rate[2:15,c(3,5)]),i, algorithm = "Hartigan-Wong")
+  kclusters[[i]]<-kmeans(as.matrix(rate[2:15,c(3,5)]),i, algorithm = "Lloyd")
+  
+  #,iter.max = 100
+}
+kclusters
+rate$k1<-as.factor(c(NA,kclusters[[1]]$cluster))
+rate$k2<-as.factor(c(NA,kclusters[[2]]$cluster))
+rate$k3<-as.factor(c(NA,kclusters[[3]]$cluster))
+rate$k4<-as.factor(c(NA,kclusters[[4]]$cluster))
+rate$k5<-as.factor(c(NA,kclusters[[5]]$cluster))
+rate$k6<-as.factor(c(NA,kclusters[[6]]$cluster))
+rate$k7<-as.factor(c(NA,kclusters[[7]]$cluster))
+rate$k8<-as.factor(c(NA,kclusters[[8]]$cluster))
+rate$k9<-as.factor(c(NA,kclusters[[9]]$cluster))
+rate$k10<-as.factor(c(NA,kclusters[[10]]$cluster))
+rate$k11<-as.factor(c(NA,kclusters[[11]]$cluster))
+rate$k12<-as.factor(c(NA,kclusters[[12]]$cluster))
+rate$k13<-as.factor(c(NA,kclusters[[13]]$cluster))
+rate$k14<-as.factor(c(NA,kclusters[[14]]$cluster))
+#rate
+```
+
+```{r}
+# alternative clustering approaches
+library(fpc)
+mydata<-as.matrix(rate[2:15,c(3,5)])
+row.names(mydata)<-rate$Node[2:15]
+pamk(mydata,6:12)
+plot( mydata[,1],mydata[,2] ,xlab="lambda",ylab="mu")
+text(x = mydata[,1],y=mydata[,2],labels=row.names(mydata))
+d <- dist(mydata, method = "euclidean") # distance matrix
+fit <- hclust(d, method="ward") 
+plot(fit)
+```
+
+```{r echo=FALSE, fig.height=18, fig.width=10}
+par(mfrow=c(7,2))
+par(mai=c(.8,.8,0.1,0))
+for (i in 1:14){
+modelLambda<-kclusters[[i]]$centers[,1]
+modelMu<-kclusters[[i]]$centers[,2]
+
+#plot(rate$Lambda2,rate$Mu2,col="white",xlim=c(0,0.007),ylim=c(0,0.007))
+plot(rate$Lambda2,rate$Mu2,col="white",xlab=paste("lambda; Clusters=",i,sep=""),ylab="mu")
+text(rate$Node,x=rate$Lambda2,y=rate$Mu2,cex=.8)
+text(1:i,x=modelLambda,y=modelMu,col="red")
+}
+
+#plot(x=modelLambda,y=modelMu,pch=1,cex=5)
+#text(1:7,x=modelLambda,y=modelMu)
+#rate
+#subset(rate,k7==1,Node)
+#subset(rate,k7==2,Node)
+#subset(rate,k7==3,Node)
+#subset(rate,k7==4,Node)
+#subset(rate,k7==5,Node)
+#subset(rate,k7==6,Node)
+#subset(rate,k7==7,Node)
+
+rate[,c(1,8,10:17)]
+write.table(rate,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/clustered.rates.CAFE.R1.tsv",quote=F, row.names=F,sep="\t")
+```
+
+
+
+
+
+```{r eval=FALSE, include=FALSE}
+#M5bK model rates
+modelLambda<-c(0.02284017,0.01232379,0.01291990,0.00194151,0.00206301)
+modelMu<-c(0.02977765,0.01213601,0.03377317,0.04653597,0.00237993)
+
+#assign nodes to cluster
+rate$M5bK<-c(0,0,2,1,5,3,1,4,5,5,5,5,5,5)
+
+CentL<-rep(NA,5)
+CentM<-rep(NA,5)
+CentL[1]<-mean(rate$Lambda[c(4,7)])
+CentM[1]<-mean(rate$Mu[c(4,7)])
+CentL[5]<-mean(rate$Lambda[c(5,9:14)])
+CentM[5]<-mean(rate$Mu[c(5,9:14)])
+CentL[2]<-rate$Lambda[rate$M5bK==2]
+CentM[2]<-rate$Mu[rate$M5bK==2]
+CentL[3]<-rate$Lambda[rate$M5bK==3]
+CentM[3]<-rate$Mu[rate$M5bK==3]
+CentL[4]<-rate$Lambda[rate$M5bK==4]
+CentM[4]<-rate$Mu[rate$M5bK==4]
+
+rate$M5bK<-c(NA,NA,2,1,5,3,1,4,5,5,5,5,5,5)
+
+rate$CentersLambda<-rate$Lambda
+rate$CentersLambda[1:2]<-NA
+rate$CentersMu<-rate$Mu
+rate$CentersMu[1:2]<-NA
+rate$CentersLambda[rate$M5bK==1]<-CentL1
+rate$CentersMu[rate$M5bK==1]<-CentM1
+rate$CentersLambda[rate$M5bK==5]<-CentL5
+rate$CentersMu[rate$M5bK==5]<-CentM5
+
+rate$ModelLambda<-NA
+rate$ModelMu<-NA
+
+for (i in 1:5){
+	rate$ModelLambda[rate$M5bK==i]<-modelMu[i]
+	rate$ModelMu[rate$M5bK==i]<-modelLambda[i]
+}
+
+
+#dev.new(t,width=3.1,height=4.5)
+dev.new(t,width=3.1,height=4.5)
+#pdf("/Users/lukas/CSE/inquilineGenomics/geneFamilyEvolution/CAFE/TEfiltered/full/Clustering/ClusterM5bK.pdf",width=3.1,height=4.5)
+par(mar=c(3, 3, 1, 1))
+par(cex.lab=.8)
+par(cex.axis=.6)
+par(mgp=c(1.5,.4,0))
+
+library(plotrix)
+cols<-rgb(0,.2,.8,.2)
+
+plot(rate$Lambda[2:15],rate$Mu[2:15],xlab="lambda",ylab="mu",cex=2,col="white",pch=1,xaxt="n",yaxt="n",xlim=c(0,0.034),ylim=c(0,0.06))
+axis(2,at=seq(0,0.06,length=4),cex.lab=.5)
+axis(1,at=seq(0,0.03,length=4),cex.lab=.5)
+segments(modelLambda,modelMu,CentL,CentM)
+points(modelLambda,modelMu,cex=.1)
+points(modelLambda,modelMu,cex=.7)
+draw.ellipse(mean(rate$Lambda[c(5,9:14)])+0.0003,mean(rate$Mu[c(5,9:14)])+0.001,a=.012,b=.0025,col=cols[1],angle=87,border=cols[1])
+draw.ellipse(mean(rate$Lambda[c(4,7)]),mean(rate$Mu[c(4,7)]),a=.0056,b=.0025,col=cols[1],angle=77,border=cols[1])
+
+points(rate$Lambda[3],rate$Mu[3],col=cols[1],cex=4,pch=19)
+points(rate$Lambda[6],rate$Mu[6],col=cols[1],cex=4,pch=19)
+points(rate$Lambda[8],rate$Mu[8],col=cols[1],cex=4,pch=19)
+for (i in 2:15){
+	points(rate$Lambda[i],rate$Mu[i],cex=1.8,col="white",pch=19)
+	points(rate$Lambda[i],rate$Mu[i],cex=1.8,col="black",pch=1)
+}
+text(rate$Lambda[2:15],rate$Mu[2:15],seq(1:12),cex=.4)
+segments(modelLambda,modelMu,CentL,CentM,col=rgb(0,0,0,.1))
+points(modelLambda,modelMu,cex=.1,col=rgb(0,0,0,.1))
+points(modelLambda,modelMu,cex=.7,col=rgb(0,0,0,.1))
+
+
+draw.ellipse(mean(rate$Lambda[c(5,9:14)])+0.0003,mean(rate$Mu[c(5,9:14)])+0.001,a=.0123,b=.0028,col=rgb(0,0,0,0),angle=87,border="gray",lwd=3)
+draw.ellipse(mean(rate$Lambda[c(4,7)]),mean(rate$Mu[c(4,7)]),a=.00563,b=.0027,col=rgb(0,0,0,0),angle=77,border="red",lwd=3)
+points(rate$Lambda[3],rate$Mu[3],col="blue",cex=4,pch=1,lwd=3)
+points(rate$Lambda[6],rate$Mu[6],col="black",cex=4,pch=1,lwd=3)
+points(rate$Lambda[8],rate$Mu[8],col="darkgreen",cex=4,pch=1,lwd=3)
+
+
+
+shiftx<-c(-0.0008,-0.0002,0.0001,0.0001,0.0015)
+shifty<-c(-0.001,0.0005,0.0005,0.0005,0.0005)
+for (i in 1:5){
+
+	text(modelLambda[i]+shiftx[i],modelMu[i]-shifty[i],paste("x: ",round(modelLambda[i],4),"\ny: ",round(modelMu[i],4),sep=""),cex=.4,pos=4)
+}
+#dev.off()
+
+#LR test
+
+library(extRemes)
+# a = ln likelihood Score for the reduced model which omits the k predictors in question, and 
+# b = ln likelihood Score for the current model which includes them. 
+# df = k
+
+M<-read.csv("/Users/lukas/CSE/inquilineGenomics/geneFamilyEvolution/doc/tables/KmeansClustered.tsv",sep="\t")
+h0<-read.csv("/Users/lukas/CSE/inquilineGenomics/geneFamilyEvolution/doc/tables/branchSpecRates.tsv",sep="\t")
+
+#H0 = h0$ln[2]
+
+lr.test(h0$ln[2],M$Score[1],df=2)
+lr.test(h0$ln[2],M$Score[7],df=8)
+lr.test(M$Score[6],M$Score[7],df=0)
+
+```
+
