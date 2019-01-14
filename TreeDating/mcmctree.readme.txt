@@ -1,0 +1,75 @@
+add mcmctree, codeml and baseml to $PATH, as mcmctree runs baseml/codeml
+used version 4.9h
+settings in mcmctree.ctl
+############################
+ndata = 1 (i.e. alignment only contains a single locus)
+usedata = 3 (to get Hessian and gradient estimates)
+alpha = 1.47227 (following baseml run results)
+
+### To include substitution rate estimate:
+change rgene_gamma to match substitution rate
+
+"The gamma distribution is described by the shape parameter (α) and scale parameter (β)．
+Let m be the mean and s be the standard deviation of the gamma distribution.
+These are related as follows:
+      a = (m/s)^2
+      b = m/s^2.
+For example, μ is 2/2 =1，then it means 1 change/site/time unit．
+If time unit is 100 MY，the overall substitution rate is 10^-8 substitution/site/year．
+According to the rough estimation using BASEML (see above), we will use
+m = 0.46 and s = 0.46．
+The shape parameter α is
+       α = (0.460286/0.460286)^2
+         = 1.
+And the scale parameter is
+       β = 0.460286/0.460286^2
+         = 2.173
+
+So in the control file, we specify rgene_gamma as follows.
+   rgene_gamma = 1 2.173
+
+Setting sigma2_gamma is not intuitive! I opted for 4.5 in the first run, but will try other options.
+Ziheng: "I think he found that sigma = 0.2 means quite a lot of rate variation"
+#see https://groups.google.com/forum/#!topic/pamlsoftware/iBWP7XapCO0
+I chose 4.5 as given in the tutorial at www.fish-evol.com/mcmctreeExampleVert6/text1Eng.html
+see /Users/lukas/Downloads/14-PAML-Inputs/1-no-plecto/mcmctree/mcmctree.ctl
+Possible to give 3 values for sigma2_gamma
+sigma2_gamma =   2 5 1  * gammaDir prior for sigma^2     (for clock=2 or 3)
+
+It is possible to give range for root node calibration
+RootAge = 'B(9.8, 14.3, 1e-300, 0.05)'
+
+Increase sampfreq to let the chain run longer
+sampfreq = 50
+sampfreq = 500 (~35 min, ESS ~30-50)
+sampfreq = 5000
+
+
+###################################################
+## Fine tuning
+  #################################################
+Adjust the fine tuning in case it is not between 0.2-0.4
+Now let’s look at the first line of the MCMC proper:
+example:     -4% 0.16 0.64 0.33 0.00 0.69  0.178 0.149 0.091 0.067 0.032 - 1.438 -34999.3
+my results:  -4% 0.01 0.83 0.08 0.99 0.00  0.237 0.127 0.054 0.047 0.013 - 0.392 -3.8
+my results2: -4% 0.28 0.40 0.46 0.52 0.00  0.603 0.354 0.258 0.209 0.013 - 0.771 -5.2 #after manual adjustment of finetune
+
+The negative percentage (−4%) indicates that we are in the burn-in stage of the MCMC. The next 5 numbers are the acceptance proportions. They are printed in the order times, rates, mixing,
+substitution model parameters, and rate param- eters. For example, 16% of all proposed times were accepted during this stage of the MCMC (i.e. 84% were rejected), while 64% of the rates propos ed
+were accepted. A good MCMC analysis should have acceptance proportions close to 30% (20-40% being a good range and 15-70% being acceptable). You can see that the program goes through various
+rounds of finetune improvement until the acceptance proportions get very close to 30%:
+
+A few seconds after you start the program, the screen output will look like the above. Scroll back to check that the tree, fossil calibrations and the sequence alignments are read correctly. The output here is generated from a
+run under the JC model and global clock (clock = 1). The percentage % indicates the progress of the run, with negative values for the burn-in. Then the five ratios (e.g., 0.33 0.01 0.25 0.00 0.00 on the first line) are the
+acceptance proportions for the corresponding proposals. The optimal acceptance proportions are around 0.3, and you should try to make them fall in the interval (0.2, 0.4) or at least (0.15, 0.7). If the acceptance proportion is
+too small (say, <0.10), you decrease the corresponding finetune parameter. If the acceptance proportion is too large (say, >0.80), you increase the corresponding finetune parameter.
+
+Output
+~/CSE/inquilineGenomics/Phylogeny/divergenceTime/FigTree.tre
+
+
+From Inoue, J., Donoghue, P. C. J., & Yang, Z. (2009).
+
+
+Page 15
+We then examined the impact of the prior on the rate-drift parameter σ2 (Rannala and Yang 2007), by multiplying parameter α in the prior G(α, β) by 0.1 or 10, so that both the mean and the variance of the prior distribution are reduced or increased by 10. In all 3 data sets, increasing the mean σ2 in the prior (so that the prior assumes more variable rates among lineages) led to younger node ages. The effect is particularly dramatic for the actinopterygian data set, presumably because the large σ2 allowed large changes in the rate across branches. Reducing the mean σ2 by 10-fold had minimal impact in the 3 data sets (see supplementary Figs. S4–S6).
