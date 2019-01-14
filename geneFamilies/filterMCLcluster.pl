@@ -41,7 +41,6 @@ close(FILE2);
 
 print "ClusterID\tFamSize\tAnn\tNo.Top\tNo.Unique\tBest\tUnique\n";
 
-#
 for my $family ( sort {$a<=>$b} keys %HoA ) {
 	my %f;
     foreach my $gene (@{ $HoA{$family} }){
