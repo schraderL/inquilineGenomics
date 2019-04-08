@@ -12,7 +12,7 @@ mkdir $base/blsDB
 
 cp -r tmp/geneFamilies/scripts/ geneFamilies/
 ###################################################
-# 1.0 Prepare peptide files for all 11 attines
+# 1.0 Prepare peptide files for all genomes
 ###################################################
 # get soft links to original peptide files
 cd $base

@@ -1,0 +1,250 @@
+---
+title: "CAFE kmeans clustering Run5 analysis"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+source("~/sciebo/librarySchrader.R")
+library(dplyr)
+```
+
+```{r include=FALSE}
+nodeLabels<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/nodeLabels.tsv",sep="\t",header=F)
+colnames(nodeLabels)<-c("tree","label")
+```
+
+Load 2-parameter models from RUN5 (contains 8 independent runs for each model)
+```{r include=T}
+###########################################################################
+#K means clustering
+###########################################################################
+# 8 runs per model
+ratesRUN5<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN5/treeRates.RUN5.tsv",sep="\t",skip=1,header=F)
+
+colnamesRates<-c("tree","lambda1","lambda2","score","mu1","mu2","scoreTmp")
+colnames(ratesRUN5)<-colnamesRates
+
+rate5<-merge(ratesRUN5,nodeLabels,all.x=T,all.y=T,by.x="tree",by.y="tree")
+rate5
+```
+
+```{r}
+#split into different branches
+s5<-split(rate5, rate5$label)
+##number of runs per model
+#data.frame(summary(rate5$label))
+
+#calculate range of lambda and mu estimates for 2-parameter models
+rangesL<-data.frame(t(sapply((lapply(s5,"[", , 3)),range)))
+rangesM<-data.frame(t(sapply((lapply(s5,"[", , 6)),range)))
+ranges<-merge(rangesL,rangesM,by="row.names",all.x=TRUE)
+colnames(ranges)<-c("label","minLambda","maxLambda","minMu","maxMu")
+
+#calculate best scoring estimate of lambda and mu for 2-parameter models
+lowestScore<-NA
+for (i in 1:length(s5)){
+  lowestScore<-rbind(lowestScore,s5[[i]][which.min(s5[[i]][,4]),])
+  
+}
+s5summary<-merge(lowestScore,ranges,by="label",all.x=F,,all.y=TRUE)
+plot(x=lowestScore$lambda2,y=lowestScore$mu2,col=rgb(1,0,0,.5),pch=19,cex=1,xlab="lambda",ylab="mu",ylim=c(0,0.009),xlim=c(0,0.0025))
+for (i in 1:nrow(s5summary)){
+segments(x0 = s5summary$minLambda[i],x1=s5summary$maxLambda[i],y0=s5summary$mu2[i],y1=s5summary$mu2[i],lwd=.5)
+segments(y0 = s5summary$minMu[i],y1=s5summary$maxMu[i],x0=s5summary$lambda2[i],x1=s5summary$lambda2[i],lwd=.5)
+}
+l<-s5summary$label
+levels(l)[levels(l)=="ACRO"]<-"ACROMYRMEX"
+text(s5summary$lambda2,s5summary$mu2+.0003,l,cex=.4)
+s5summary
+
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN5.all8runs.pdf")
+write.table(lowestScore,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN5.all8runs.bestFits.tsv",sep="\t",quote=F,row.names=F)
+```
+```{r}
+# choose best estimates of the runs as basis for analysis
+rate<-s5summary
+#as.matrix(rate[2:nrow(rate),c(4,7)])
+nmodels<-nrow(rate)
+kclusters<-list()
+for (i in 1:8){
+  #kclusters[[i]]<-kmeans(as.matrix(rate[1:nmodels,c(4,7)]),i, algorithm = "MacQueen", nstart = 1000)
+  #kclusters[[i]]<-kmeans(as.matrix(rate[1:nmodels,c(4,7)]),i, algorithm = "Hartigan-Wong", nstart = 1000)
+  #kclusters[[i]]<-kmeans(as.matrix(rate[1:nmodels,c(4,7)]),i, algorithm = "Lloyd", nstart = 1000)
+  kclusters[[i]]<-kmeans(as.matrix(rate[1:nmodels,c(4,7)]),i, nstart = 1000)
+}
+#kclusters
+rate$k1<-as.factor(c(kclusters[[1]]$cluster))
+rate$k2<-as.factor(c(kclusters[[2]]$cluster))
+rate$k3<-as.factor(c(kclusters[[3]]$cluster))
+rate$k4<-as.factor(c(kclusters[[4]]$cluster))
+rate$k5<-as.factor(c(kclusters[[5]]$cluster))
+rate$k6<-as.factor(c(kclusters[[6]]$cluster))
+rate$k7<-as.factor(c(kclusters[[7]]$cluster))
+rate$k8<-as.factor(c(kclusters[[8]]$cluster))
+#rate
+
+```
+
+```{r echo=FALSE, fig.height=5, fig.width=4}
+par(mai=c(.6,.5,0.1,0.1))
+# alternative clustering approaches
+library(fpc)
+mydata<-as.matrix(rate[1:nmodels,c(4,7)])
+row.names(mydata)<-rate$label[1:nmodels]
+pamkResults<-pamk(mydata,3:9)
+
+d <- dist(mydata, method = "euclidean") # distance matrix
+fit <- hclust(d, method="ward.D") 
+plot(fit,main="",xlab="")
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN5.Kmeans.hclust.pdf")
+```
+
+```{r echo=FALSE, fig.height=5, fig.width=10}
+par(mfrow=c(2,4))
+par(mai=c(.6,.5,0.1,0.1))
+
+for (i in 1:8){
+  modelLambda<-kclusters[[i]]$centers[,1]
+  modelMu<-kclusters[[i]]$centers[,2]
+  
+  plot(rate$lambda2,rate$mu2,col=rgb(.5,.5,.5,.2),pch=19,xlab=paste("lambda; Clusters=",i,sep=""),ylab="mu",cex=4,lwd=2,ylim=c(0,0.009),xlim=c(0,0.003))
+  points(rate$lambda2,rate$mu2,col=rate[,12+i],pch=1,xlab=paste("lambda; Clusters=",i,sep=""),ylab="mu",cex=4,lwd=2)
+  if(i==1){
+  text(rate$label,x=rate$lambda2,y=rate$mu2,cex=.8)
+  }
+  text(rate[,12+i],x=rate$lambda2,y=rate$mu2,cex=1,col=rgb(.3,.3,.3,1),font=2)
+}
+
+#write.table(rate,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/clustered.rates.CAFE.RUN5.bestFits.tsv",quote=F, row.names=F,sep="\t")
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN5.Kmeans.clustering.pdf")
+c1<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/allProperRuns.tsv",sep="\t")
+c1<-c1[order(c1$likelihood,decreasing=F),]
+points(c1[1,4:9],c1[1,15:20],cex=1,col="red",pch=19)
+
+```
+
+I choose 5 clusters to go. 
+```{r}
+
+```
+
+
+```{r}
+
+#(((3,(3,1)5)2,(4,5)2)2,2);
+#(((AHEY,(ACHA,PARG)),(AECH,AINS)),ACOL);
+
+RUN1C<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN1C/rates.RUN1C.tsv",sep="\t",header=F)
+RUN2C<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN2C/rates.RUN2C.tsv",sep="\t",header=F)
+RUN3C<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN3C/rates.RUN3C.tsv",sep="\t",header=F)
+
+
+row.names(RUN1C)<-paste("r1c",1:length(RUN1C$V1),sep=".")
+row.names(RUN2C)<-paste("r2c",1:length(RUN2C$V1),sep=".")
+row.names(RUN3C)<-paste("r3c",1:length(RUN3C$V1),sep=".")
+rates5cluster<-rbind(rbind(RUN1C,RUN2C),RUN3C)
+
+rates5cluster
+colnamesRates<-c("lambda1","lambda2","lambda3","lambda4","lambda5","score","mu1","mu2","mu3","mu4","mu5","scoreTmp")
+colnames(rates5cluster)<-colnamesRates
+rates5cluster<-rates5cluster[order(rates5cluster$score),]
+
+renameRates<-cbind(rate[,c(8,13)],colnames(rates5cluster)[rate$k5])
+
+lambda5cluster<-as.data.frame(t(rates5cluster))[1:5,]
+mu5cluster<-as.data.frame(t(rates5cluster))[7:11,]
+
+plot(lambda5cluster[,1],mu5cluster[,1],xlim=c(-0.0005,0.003),ylim=c(-0.0005,0.01),col="white")
+for ( i in 1:5){
+  text(lambda5cluster[,i],mu5cluster[,i],1:5,col=goodCols[i])
+}
+
+points(rate$lambda2,rate$mu2,col="red",cex=.4)
+#text(rate$lambda2,rate$mu2,1:10,col="red",cex=1)
+
+```
+
+
+```{r fig.height=4.5, fig.width=3.1}
+#dev.new(t,width=3.1,height=4.5)
+#pdf("/Users/lukas/CSE/inquilineGenomics/geneFamilyEvolution/CAFE/TEfiltered/full/Clustering/ClusterM5bK.pdf",width=3.1,height=4.5)
+par(mar=c(3, 3, 1, 1))
+par(cex.lab=.8)
+par(cex.axis=.6)
+par(mgp=c(1.5,.4,0))
+
+
+plot(rate$lambda2,rate$mu2,xlab="lambda; Clusters=5",ylab="mu",col=goodCols,pch=19,cex=1.2,xlim=c(-0.0005,0.003),ylim=c(-0.0005,0.008))
+
+#rates5cluster
+library(plotrix)
+segments(x0 = rate$lambda2[rate$label=="PARG"],x1=lambda5cluster[1,1],y0=rate$mu2[rate$label=="PARG"],y1=mu5cluster[1,1],lty=1)
+segments(x0 = rate$lambda2[rate$label=="AECH"],x1=lambda5cluster[4,1],y0=rate$mu2[rate$label=="AECH"],y1=mu5cluster[4,1],lty=1)
+segments(x0 = lambda5cluster[3,1]+0.00027,x1=lambda5cluster[3,1],y0=mu5cluster[3,1]-0.00033,y1=mu5cluster[3,1],lty=1)
+segments(x0 = lambda5cluster[5,1]+0.0001,x1=lambda5cluster[5,1],y0=mu5cluster[5,1]+0.0006,y1=mu5cluster[5,1],lty=1)
+
+ellipseCol<-rgb(.95,.95,.95,1)
+#draw.ellipse(lambda5cluster[1,1]+0.00005,mu5cluster[1,1]+0.0006,a=.0003,b=.00006,col=ellipseCol,angle=87,border="black")
+draw.ellipse(lambda5cluster[2,1],mu5cluster[2,1]+0.00015,a=.0008,b=.00050,col=ellipseCol,angle=37,border=goodCols[1],lwd=4)
+#draw.ellipse(lambda5cluster[4,1]+0.00074,mu5cluster[4,1]-0.0004,a=.0002,b=.0002,col=ellipseCol,angle=-60,border="black")
+draw.ellipse(lambda5cluster[3,1]+0.0005,mu5cluster[3,1]-0.0002,a=.0004,b=.0006,col=ellipseCol,angle=-210,border=goodCols[2],lwd=4)
+draw.ellipse(lambda5cluster[5,1]+0.00015,mu5cluster[5,1]+0.0006,a=.0009,b=.0004,col=ellipseCol,angle=50,border=goodCols[3],lwd=4)
+points(lambda5cluster[,1],mu5cluster[,1],cex=.8,pch=3)
+
+for(i in 1:nrow(rate)){
+borCol<-"black"
+points(rate$lambda2[i],rate$mu2[i],col=borCol,pch=19,cex=2.5)
+if(rate$label[i]=="PARG"||rate$label[i]=="AECH"){
+  points(rate$lambda2[i],rate$mu2[i],col=goodCols[3+i],pch=19,cex=3)
+  }
+points(rate$lambda2[i],rate$mu2[i],col="white",pch=19,cex=2)
+text(x = rate$lambda2[i],y = rate$mu2[i],labels = i,cex=.6)
+}
+#text(x=rate$lambda2+0.00002,y=rate$mu2+0.0001,rate$label,cex=.4,pos=4,font=2)
+#rates5cluster
+
+
+```
+```{r}
+#LR test
+
+library(extRemes)
+# a = ln likelihood Score for the reduced model which omits the k predictors in question, and 
+# b = ln likelihood Score for the current model which includes them. 
+# df = k
+#H0 = h0$ln[2]
+
+
+lr.test(rate$score[1],rates5cluster$score[1])
+lr.test(rates5cluster$score[2],rates5cluster$score[1])
+
+
+
+```

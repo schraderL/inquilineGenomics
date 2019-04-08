@@ -91,11 +91,11 @@ I set p=0.6
 
 
 # plot in R
-library(VGAM)
+Rs
 #plot(density(rskewnorm(1000000, location = 17.67667, scale = 2, shape = -3)),xlim=c(5,22))
 #points(density(rskewnorm(1000000, location = 12.64, scale = 2, shape = 3)),type="l")
 p<-0.6
-hist(rskewnorm(p*1000000, location = 17.67667, scale = 2, shape = -1),xlim=c(5,22),200,col="red",border="red")
+hist(rskewnorm(p*1000000, location = 17.67667, scale = 2, shape = -1),xlim=c(5,22),200,col="red",border="red",main="",xlab="S2N(0.6,17.68,2,-1,12.64,2,1)")
 hist(rskewnorm((1-p)*1000000, location = 12.64, scale = 2, shape = 1),add=T,200,col="red",border="red")
 
 S2N(0.6,17.68,2,-1,12.64,2,1)

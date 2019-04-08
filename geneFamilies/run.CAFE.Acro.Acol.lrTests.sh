@@ -29,3 +29,9 @@ lhtest -d /usr/local/home/lschrader/data/inqGen18/geneFamilies/CAFE/lhtest/ -t (
 # cut -f 2,4 /usr/local/home/lschrader/data/inqGen18/geneFamilies/CAFE/tests/lhtest_result.txt > /usr/local/home/lschrader/data/inqGen18/geneFamilies/CAFE/tests/lk_diffs.txt
 # cd /usr/local/home/lschrader/data/inqGen18/geneFamilies/CAFE/tests/
 # Rscript lhtest.R lk_diffs.txt -27399.1 -27947.2
+
+# testing
+# create randomized gene set
+#genfamily /usr/local/home/lschrader/data/inqGen18/geneFamilies/CAFE/lhtest/rnd -t 1
+# test against best clustered tree
+#lhtest -d /usr/local/home/lschrader/data/inqGen18/geneFamilies/CAFE/lhtest/ -t (((3,(3,1)5)2,(4,5)2)2,2) -m 0.00041658305593 -l 0.000574758 -o /usr/local/home/lschrader/data/inqGen18/geneFamilies/CAFE/lhtest/lhtest_result.tmp.txt

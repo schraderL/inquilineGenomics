@@ -62,3 +62,17 @@ halSummarizeMutations attines.hal > mutations.attines.tsv
 halStats  --allCoverage attines.hal > stats.attines.tsv
 
 #hal2maf Ahey.Ains.Aech.Acol.hal Ahey.Ains.Aech.Acol.maf
+
+for node in AHEY ACHA AECH AINS Anc09
+do
+  nice halBranchMutations attines.hal $node --refFile $node.ins.bed --parentFile $node.del.bed
+done
+
+for node in ACOL ACEP Anc06 Anc07 Anc05 Anc08 Anc06 Anc04
+do
+  nice halBranchMutations attines.hal $node --refFile $node.ins.bed --parentFile $node.del.bed
+done
+
+
+
+#nice halPhyloPTrain.py attines.hal AECH neutralRegions.bed neutralModel.mod --numProc 12

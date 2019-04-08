@@ -1,0 +1,170 @@
+---
+title: "CAFE kmeans best fitting 5-parameter model selection"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+```{r include=FALSE}
+library(plotrix)
+source("~/sciebo/librarySchrader.R")
+library(dplyr)
+
+```
+Load 
+```{r}
+# complex model with 5 clusters
+tRUN1DC<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN1DC/treeRates.RUN1DC.tsv",sep="\t",header=F)
+# complex model with 5 clusters
+tRUN1C<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN1C/treeRates.RUN1C.tsv",sep="\t",header=F)
+# complex model with 5 clusters
+tRUN2C<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN2C/treeRates.RUN2C.tsv",sep="\t",header=F)
+# complex model with 5 clusters
+tRUN3C<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN3C/treeRates.RUN3C.tsv",sep="\t",header=F)
+
+
+runs<-rbind(tRUN1C,tRUN2C) %>% rbind(.,tRUN3C) %>% rbind(.,tRUN1DC)
+colnamesTreerates<-c("tree","lambda1","lambda2","lambda3","lambda4","lambda5","score","mu1","mu2","mu3","mu4","mu5","scoreTmp")
+colnames(runs)<-colnamesTreerates
+runs<-runs[order(runs$score),]
+
+```
+
+
+
+```{r}
+
+rate<-read.table("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/clustered.rates.CAFE.RUN5.bestFits.tsv",sep="\t",T)
+best5pModel<-head(runs[order(runs$score),],1)
+
+llabels<-paste(c("PARG","INTERNALS","ACHA.AHEY","AECH","AINS.ACHA.PARG"),rep("l",5),sep="")
+mlabels<-paste(c("PARG","INTERNALS","ACHA.AHEY","AECH","AINS.ACHA.PARG"),rep("m",5),sep="")
+colnames(best5pModel)[2:6]<-llabels
+colnames(best5pModel)[8:12]<-mlabels
+runs
+```
+
+```{r fig.height=2.5, fig.width=1.7}
+#dev.new(t,width=3.1,height=4.5)
+#pdf("/Users/lukas/CSE/inquilineGenomics/geneFamilyEvolution/CAFE/TEfiltered/full/Clustering/ClusterM5bK.pdf",width=3.1,height=4.5)
+par(mar=c(3, 3, 1, 1))
+par(cex.lab=.8)
+par(cex.axis=.6)
+par(mgp=c(1.5,.4,0))
+
+ellipseCol<-rgb(.95,.95,.95,1)
+plot(rate$lambda2,rate$mu2,xlab="lambda; Clusters=5",ylab="mu",col=goodCols,pch=19,cex=2,xlim=c(-0.0005,0.003),ylim=c(-0.0005,0.008))
+
+## add segments connecting ellipses to cluster centers
+# parasite origins
+segments(x0 = best5pModel$AINS.ACHA.PARGl+0.0001,x1=best5pModel$AINS.ACHA.PARGl,y0=best5pModel$AINS.ACHA.PARGm+0.0006,y1=best5pModel$AINS.ACHA.PARGm,lty=1)
+#ACHA/AHEY
+segments(x0 = best5pModel$ACHA.AHEYl+0.00027,x1=best5pModel$ACHA.AHEYl,y0=best5pModel$ACHA.AHEYm-0.00033,y1=best5pModel$ACHA.AHEYm,lty=1)
+#AECH
+segments(x0 = rate$lambda2[rate$label=="AECH"],x1=best5pModel$AECHl,y0=rate$mu2[rate$label=="AECH"],y1=best5pModel$AECHm,lty=1)
+#PARG
+segments(x0 = rate$lambda2[rate$label=="PARG"],x1=best5pModel$PARGl,y0=rate$mu2[rate$label=="PARG"],y1=best5pModel$PARGm,lty=1)
+
+## add ellipses where necessary
+# parasite origins
+draw.ellipse(best5pModel$AINS.ACHA.PARGl+0.00015,best5pModel$AINS.ACHA.PARGm+0.0006,a=.0009,b=.0004,col=ellipseCol,angle=50,border=goodCols[1],lwd=7)
+# Acha/Ahey
+draw.ellipse(best5pModel$ACHA.AHEYl+0.0005,best5pModel$ACHA.AHEYm-0.0002,a=.0004,b=.0006,col=ellipseCol,angle=-210,border=goodCols[2],lwd=7)
+# large group ellipse
+draw.ellipse(best5pModel$INTERNALSl,best5pModel$INTERNALSm+0.00015,a=.0008,b=.00050,col=ellipseCol,angle=37,border="gray60",lwd=7)
+# AECH
+points(rate$lambda2[rate$label=="AECH"],rate$mu2[rate$label=="AECH"],col=goodCols[4],pch=19,cex=3.4)
+# PARG
+points(rate$lambda2[rate$label=="PARG"],rate$mu2[rate$label=="PARG"],col=goodCols[5],pch=19,cex=3.4)
+
+## add numbered points
+for(i in 1:nrow(rate)){
+  borCol<-"black"
+  points(rate$lambda2[i],rate$mu2[i],col=borCol,pch=19,cex=2.4)
+  points(rate$lambda2[i],rate$mu2[i],col="white",pch=19,cex=2.1)
+  text(x = rate$lambda2[i],y = rate$mu2[i],labels = i,cex=.8)
+}
+
+# add colored dots at center of cluster
+points(best5pModel$AINS.ACHA.PARGl,best5pModel$AINS.ACHA.PARGm,cex=1,pch=19,col=goodCols[1])
+points(best5pModel$ACHA.AHEYl,best5pModel$ACHA.AHEYm,cex=1,pch=19,col=goodCols[2])
+points(best5pModel$INTERNALSl,best5pModel$INTERNALSm,cex=1,pch=19,col="gray60")
+points(best5pModel$AECHl,best5pModel$AECHm,cex=1,pch=19,col=goodCols[4])
+points(best5pModel$PARGl,best5pModel$PARGm,cex=1,pch=19,col=goodCols[5])
+
+
+text(best5pModel$AINS.ACHA.PARGl,best5pModel$AINS.ACHA.PARGm,paste("x = ",sprintf("%.5f",best5pModel$AINS.ACHA.PARGl),"\ny = ",sprintf("%.5f",best5pModel$AINS.ACHA.PARGm),sep=""),cex=.5)
+text(best5pModel$ACHA.AHEYl,best5pModel$ACHA.AHEYm,paste("x = ",sprintf("%.5f",best5pModel$ACHA.AHEYl),"\ny = ",sprintf("%.5f",best5pModel$ACHA.AHEYm),sep=""),cex=.5)
+text(best5pModel$AECHl,best5pModel$AECHm,paste("x = ",sprintf("%.5f",best5pModel$AECHl),"\ny = ",sprintf("%.5f",best5pModel$AECHm),sep=""),cex=.5)
+text(best5pModel$PARGl,best5pModel$PARGm,paste("x = ",sprintf("%.5f",best5pModel$PARGl),"\ny = ",sprintf("%.5f",best5pModel$PARGm),sep=""),cex=.5)
+text(best5pModel$INTERNALSl,best5pModel$INTERNALSm,paste("x = ",sprintf("%.5f",best5pModel$INTERNALSl),"\ny = ",sprintf("%.5f",best5pModel$INTERNALSm),sep=""),cex=.5)
+
+
+dev.print(pdf,        # copies the plot to a the PDF file
+          "/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/Cluster5.pdf")
+
+
+library(ape)
+tree<-read.tree(text = "(((AHEY:0.024983,(ACHA:0.016335,PARG:0.016335):0.008648):0.027567,(AECH:0.009605,AINS:0.009605):0.042945):0.065115,ACOL:0.117665);")
+
+
+##############################
+require(ggtree)
+require(phylobase)
+par(mfrow=c(2,1))
+set.seed(123)
+tr = tree
+tr$tip.label[tr$tip.label=="AHEY"]<-"A.heyeri"
+tr$tip.label[tr$tip.label=="ACHA"]<-"A.charruanus"
+tr$tip.label[tr$tip.label=="PARG"]<-"P.argentina"
+tr$tip.label[tr$tip.label=="AECH"]<-"A.echinatior"
+tr$tip.label[tr$tip.label=="AINS"]<-"A.insinuator"
+tr$tip.label[tr$tip.label=="ACOL"]<-"A.colombica"
+
+g1 = as(tr, 'phylo4')
+d = data.frame(color=c(goodCols[2],goodCols[2],goodCols[5],goodCols[4],goodCols[1],"gray60"))
+rownames(d) = tr$tip.label
+g2 = phylo4d(g1, d)
+
+
+
+rNodeData <- data.frame(randomTrait = rnorm(nNodes(g1)),
+                        color = c("gray60","gray60","gray60",goodCols[1],"gray60"),
+                        row.names = nodeId(g1, "internal"))
+
+nodeData(g2) <- rNodeData
+#ggtree(g2, aes(color=I(color)),size=3) +  geom_nodepoint(shape=15,size=2.6) + geom_tiplab(aes(label=paste0('italic(', label, ')'),align=TRUE,offset = .001,color=1) + xlim(0,0.14) +geom_tippoint(shape=15, size=2.6)
+                                                                                          
+                                                                                          
+ggtree(g2, aes(color=I(color)),size=3)  + geom_tiplab(aes(label=paste0('italic(', label, ')')), parse=T,offset=0.002,color=1) + xlim(0,0.2)+geom_nodepoint(size=3.1,shape=19)
+
+#geom_nodepoint(size=5,color='black',shape=19)+geom_nodepoint(size=4.2,color='white',shape=19)+geom_tippoint(shape=19, size=5,color="black") +geom_tippoint(shape=19, size=4.2,color="white") + geom_nodelab(label=c("1","1","1","2","1"),nudge_x = -0.0005,color=1) + geom_tiplab(label=c("5","5","4","3","2","1"),offset=-0.0013,color="black",size=3)
+
+dev.print(pdf,        # copies the plot to a the PDF file
+          "/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/Cluster5.phylo.pdf")
+
+```
+

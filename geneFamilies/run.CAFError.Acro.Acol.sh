@@ -79,7 +79,7 @@ runName=RUN1
 ############################################
 :'
 # Ultrametric, MCMCtree dated, phylogenetic tree:
-~/data/inqGen18/phylogeny/treeDating/MCMCtree/mcmctree.sf500.sr17.5cal.sigma2.5.5.run1/FigTree.run1.tre
+~/data/inqGen18/phylogeny/treeDating/MCMCtree/mcmctree.sf500.sr17.5cal.sigma2.5.5.run1/FigTree.run4.tre
 # MCL clustered genes:
 ## inflation parameter I = 1.5
 ~/inqGen18/geneFamilies/results/mcl.clean/largeQC.TEpso.nofilter.MCL.I01.5.cafe.tsv

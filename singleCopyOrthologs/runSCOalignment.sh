@@ -172,3 +172,11 @@ mv concatenated.out 4d/4dAll.fa
 mv partitions.txt 4d/4dAll.partitions.txt
 #prank -convert -d=4d/4dAll.fa -o=4d/4dAll -f=phylipi
 rm -rf 4d/4dtmp/
+
+
+################################################################################
+# 2.7 summary statistics
+################################################################################
+cd $base/4d/QC4d
+python /usr/local/home/lschrader/software/amas-0.98/amas/AMAS.py summary -i $base/4d/4dAll.fa -f fasta -d dna
+# creates $base/4d/QC4d/summary.txt

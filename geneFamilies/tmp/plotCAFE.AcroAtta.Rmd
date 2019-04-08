@@ -1,8 +1,9 @@
 ---
-title: 'CAFE kmeans clustering and plotting of results'
+title: "CAFE kmeans clustering and plotting of results"
 output:
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 <STYLE TYPE="text/css">
 <!--
@@ -27,6 +28,11 @@ output:
   }
 --->
 </STYLE>
+
+```{r}
+source("~/sciebo/librarySchrader.R")
+```
+
 ```{r include=T}
 nodeLabels<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/nodeLabels.tsv",sep="\t",header=F)
 colnames(nodeLabels)<-c("tree","label")
@@ -151,9 +157,7 @@ points(rate$lambda2,rate$mu2,col="red",cex=.4)
 ```
 
 ```{r fig.height=4.5, fig.width=3.1}
-source("~/sciebo/librarySchrader.R")
-
-dev.new(t,width=3.1,height=4.5)
+#dev.new(t,width=3.1,height=4.5)
 #pdf("/Users/lukas/CSE/inquilineGenomics/geneFamilyEvolution/CAFE/TEfiltered/full/Clustering/ClusterM5bK.pdf",width=3.1,height=4.5)
 par(mar=c(3, 3, 1, 1))
 par(cex.lab=.8)

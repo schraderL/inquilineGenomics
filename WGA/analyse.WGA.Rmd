@@ -1,0 +1,400 @@
+---
+title: "Genome evolution of inquilines"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+```{r}
+source("~/sciebo/librarySchrader.R")
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(RColorBrewer)
+library(gplots)
+```
+
+###Load and prepare the data from whole genome alignments.
+```{r include=FALSE}
+rawDataIns<-list()
+rawDataDel<-list()
+data<-list()
+data2<-list()
+resultFolder<-"/Users/lukas/sciebo/inquilineGenomics18/WGA/results/"
+#selection<- c("ACHA","PARG","AHEY","AINS","AECH","Anc09","ACOL","ACEP","Anc07","Anc08","Anc05","Anc04","Anc06")
+selection<- c("ACHA","PARG","AHEY","AINS","AECH","Anc09","ACOL","ACEP","Anc07","Anc08","Anc05","Anc04")
+for (species in selection){
+
+  rawDataIns[[species]]<-read.csv(paste(resultFolder,species,".ins.bed",sep=""),sep="\t",comment.char = "#",F)
+  rawDataDel[[species]]<-read.csv(paste(resultFolder,species,".del.bed",sep=""),sep="\t",comment.char = "#",F)
+  colnames(rawDataIns[[species]])<-c("Sequence", "Start", "End","MutationID","ParentGenome","ChildGenome")
+  colnames(rawDataDel[[species]])<-c("Sequence", "Start", "End","MutationID","ParentGenome","ChildGenome")
+  data[[species]]<-rbind(rawDataDel[[species]],rawDataIns[[species]])
+  data2[[species]]<-split(data[[species]],f=data[[species]]$MutationID)
+}
+
+```
+### Retrieve progressive Cactus mutations.tsv
+```{r}
+ muts<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/WGA/results/mutations.attines.tsv",sep=",")
+```
+
+*"ACHA","PARG","AHEY","AINS","AECH","Anc09","ACOL","ACEP","Anc07","Anc08","Anc05","Anc04","Anc06"*
+
+ P=Transposition
+ I=Insertion
+ D=Deletion
+ V=Inversion
+ GI(D)=GapInsertion(GapDeletion)
+ U=Duplication
+ DB=Deletion Breakpoint GDB=Gap Deletion Breakpoint
+
+###Create subsets for each mutation type and each species/branch.
+```{r include=FALSE}
+# P=Transposition
+# I=Insertion
+# D=Deletion
+# V=Inversion
+# GI(D)=GapInsertion(GapDeletion)
+# U=Duplication
+# DB=Deletion Breakpoint GDB=Gap Deletion Breakpoint
+
+P<-list()
+D<-list()
+V<-list()
+U<-list()
+I<-list()
+Psummary<-list()
+Dsummary<-list()
+Vsummary<-list()
+Usummary<-list()
+Isummary<-list()
+
+PRanges<-c(0,100,1000,2000,5000,10000,20000,30000,40000,500000,1000000,2000000,2000000000)
+DRanges<-c(0,10,50,100,500,1000,1500,2000,2500,5000,10000,20000,30000,40000)
+VRanges<-c(0,10,50,100,500,1000,1500,2000,2500,5000,10000,20000,2000000000)
+URanges<-c(0,10,50,100,500,1000,1500,2000,2500,5000,10000,20000,30000,40000)
+IRanges<-c(0,10,50,100,500,1000,1500,2000,2500,5000,10000,20000,30000,40000)
+
+for (species in selection){
+  P[[species]]<-data2[[species]]$P
+  P[[species]]$length<-P[[species]]$End-P[[species]]$Start
+  D[[species]]<-data2[[species]]$D
+  D[[species]]$length<-D[[species]]$End-D[[species]]$Start
+  V[[species]]<-data2[[species]]$V
+  V[[species]]$length<-V[[species]]$End-V[[species]]$Start
+  U[[species]]<-data2[[species]]$U
+  U[[species]]$length<-U[[species]]$End-U[[species]]$Start
+  I[[species]]<-data2[[species]]$I
+  I[[species]]$length<-I[[species]]$End-I[[species]]$Start
+
+
+  P[[species]]$group<-cut(P[[species]]$length, breaks = PRanges, right = TRUE)
+  Psummary[[species]]<-P[[species]] %>%
+    group_by(group) %>%
+    count(group)
+  Psummary[[species]]$species<-species
+  Psummary[[species]]$MY<-Psummary[[species]]$n/(muts$BranchLength[muts$GenomeName==species]*100)
+
+  D[[species]]$group<-cut(D[[species]]$length, breaks = DRanges, right = TRUE)
+  Dsummary[[species]]<-D[[species]] %>%
+    group_by(group) %>%
+    count(group)
+  Dsummary[[species]]$species<-species
+  Dsummary[[species]]$MY<-Dsummary[[species]]$n/(muts$BranchLength[muts$GenomeName==species]*100)
+
+  V[[species]]$group<-cut(V[[species]]$length, breaks = VRanges, right = TRUE)
+  Vsummary[[species]]<-V[[species]] %>%
+    group_by(group) %>%
+    count(group)
+  Vsummary[[species]]$species<-species
+  Vsummary[[species]]$MY<-Vsummary[[species]]$n/(muts$BranchLength[muts$GenomeName==species]*100)
+
+  U[[species]]$group<-cut(U[[species]]$length, breaks = URanges, right = TRUE)
+  Usummary[[species]]<-U[[species]] %>%
+    group_by(group) %>%
+    count(group)
+  Usummary[[species]]$species<-species
+  Usummary[[species]]$MY<-Usummary[[species]]$n/(muts$BranchLength[muts$GenomeName==species]*100)
+
+
+  I[[species]]$group<-cut(I[[species]]$length, breaks = IRanges, right = TRUE)
+  Isummary[[species]]<-I[[species]] %>%
+    group_by(group) %>%
+    count(group)
+  Isummary[[species]]$species<-species
+  Isummary[[species]]$MY<-Isummary[[species]]$n/(muts$BranchLength[muts$GenomeName==species]*100)
+}
+```
+
+### Calculate and plot
+
+#### V=Inversions
+```{r echo=FALSE}
+
+##################################################################
+# V=Inversions
+##################################################################
+
+Vall<-do.call("rbind", Vsummary)
+Vall$species<-as.factor(Vall$species)
+Vall$species<-(factor(Vall$species,levels(Vall$species)[c(7,9,1,3,8,10,4,6,11,5,12,2,13)]))
+# rename labels for ranges
+levels(Vall$group)[levels(Vall$group)=="(0,10]"]<-" 0.01 kb"
+levels(Vall$group)[levels(Vall$group)=="(10,50]"]<-" 0.01 kb"
+levels(Vall$group)[levels(Vall$group)=="(50,100]"]<-" 0.05-0.1 kb"
+levels(Vall$group)[levels(Vall$group)=="(100,500]"]<-" 0.1-0.5 kb"
+levels(Vall$group)[levels(Vall$group)=="(500,1e+03]"]<-" 0.5-1.0 kb"
+levels(Vall$group)[levels(Vall$group)=="(1e+03,1.5e+03]"]<-" 1.0-1.5 kb"
+levels(Vall$group)[levels(Vall$group)=="(1.5e+03,2e+03]"]<-" 1.5-2.0 kb"
+levels(Vall$group)[levels(Vall$group)=="(2e+03,2.5e+03]"]<-" 2.0-2.5 kb"
+levels(Vall$group)[levels(Vall$group)=="(2.5e+03,5e+03]"]<-" 2.5-5.0 kb"
+levels(Vall$group)[levels(Vall$group)=="(5e+03,1e+04]"]<-" 5.0-10 kb"
+levels(Vall$group)[levels(Vall$group)=="(1e+04,2e+04]"]<-" 10-20 kb"
+levels(Vall$group)[levels(Vall$group)=="(2e+04,2e+09]"]<-" 20 kb"
+
+Vall$group<-as.factor(Vall$group)
+#levels(Vall$group)<-levels(Vall$group)[c(9,1:8)]
+#levels(Vall)<-rev(levels(Vall))
+
+theme_set(theme_pubclean())
+
+cols <- colorRampPalette(brewer.pal(8,"Blues"))(length(levels(Vall$group)))
+ggplot(Vall, aes(x = species, y = MY)) +
+  geom_bar(aes(color = Vall$group, fill = Vall$group), stat = "identity") +
+  scale_color_manual(values = rep("gray40",20))  + theme(legend.position="right") +
+  theme_minimal() +
+  theme(legend.title = element_blank()) +
+  scale_fill_manual(values = cols) +
+  ylab("Inversion Events per MY") +
+  xlab("Branch")
+
+```
+
+# D=Deletions
+```{r echo=FALSE}
+
+##################################################################
+# Deletions
+##################################################################
+
+Dall<-do.call("rbind", Dsummary)
+Dall$species<-as.factor(Dall$species)
+Dall$species<-(factor(Dall$species,levels(Dall$species)[c(7,9,1,3,8,10,4,6,11,5,12,2,13)]))
+
+
+#c(0,50,100,500,1000,1500,2000,2500,5000,10000,20000,30000,40000)
+# rename labels for ranges
+levels(Dall$group)[levels(Dall$group)=="(0,10]"]<-" 0.01 kb"
+levels(Dall$group)[levels(Dall$group)=="(10,50]"]<-" 0.01-0.05 kb"
+levels(Dall$group)[levels(Dall$group)=="(50,100]"]<-" 0.05-0.1 kb"
+levels(Dall$group)[levels(Dall$group)=="(100,500]"]<-" 0.1-0.5 kb"
+levels(Dall$group)[levels(Dall$group)=="(500,1e+03]"]<-" 0.5-1.0 kb"
+levels(Dall$group)[levels(Dall$group)=="(1e+03,1.5e+03]"]<-" 1.0-1.5 kb"
+levels(Dall$group)[levels(Dall$group)=="(1.5e+03,2e+03]"]<-" 1.5-2.0 kb"
+levels(Dall$group)[levels(Dall$group)=="(2e+03,2.5e+03]"]<-" >2.0 kb"
+
+Dall$group<-as.factor(Dall$group)
+#levels(Dall$group)<-levels(Dall$group)[c(9,1:8)]
+#levels(Dall)<-rev(levels(Dall))
+
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(RColorBrewer)
+
+theme_set(theme_pubclean())
+
+cols <- colorRampPalette(brewer.pal(8,"Blues"))(length(levels(Dall$group)))
+ggplot(Dall, aes(x = species, y = MY)) +
+  geom_bar(aes(color = Dall$group, fill = Dall$group), stat = "identity") +
+  scale_color_manual(values = rep("gray40",30))  + theme(legend.position="right") +
+  theme_minimal() +
+  theme(legend.title = element_blank()) +
+  scale_fill_manual(values = cols) +
+  ylab("Deletion Events per MY") +
+  xlab("Branch")
+
+```
+
+# P=Transpositions
+```{r echo=FALSE}
+
+##################################################################
+# P=Transpositions
+##################################################################
+
+Pall<-do.call("rbind", Psummary)
+Pall$species<-as.factor(Pall$species)
+Pall$species<-(factor(Pall$species,levels(Pall$species)[c(7,9,1,3,8,10,4,6,11,5,12,2,13)]))
+
+# rename labels for ranges
+levels(Pall$group)[levels(Pall$group)=="(0,100]"]<-" 0.1 kb"
+levels(Pall$group)[levels(Pall$group)=="(100,1e+03]"]<-" 0.1-1.0 kb"
+levels(Pall$group)[levels(Pall$group)=="(1e+03,2e+03]"]<-" 1.0-2.0 kb"
+levels(Pall$group)[levels(Pall$group)=="(2e+03,5e+03]"]<-" 2.0-5.0 kb"
+levels(Pall$group)[levels(Pall$group)=="(5e+03,1e+04]"]<-" 5.0-10 kb"
+levels(Pall$group)[levels(Pall$group)=="(1e+04,2e+04]"]<-" 10-20 kb"
+levels(Pall$group)[levels(Pall$group)=="(2e+04,3e+04]"]<-" 20-30 kb"
+levels(Pall$group)[levels(Pall$group)=="(3e+04,4e+04]"]<-" 30-40 kb"
+levels(Pall$group)[levels(Pall$group)=="(4e+04,5e+05]"]<-" >40 kb"
+
+
+
+Pall$group<-as.factor(Pall$group)
+#levels(Pall$group)<-levels(Pall$group)[c(9,1:8)]
+#levels(Pall)<-rev(levels(Pall))
+
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(RColorBrewer)
+
+theme_set(theme_pubclean())
+
+cols <- colorRampPalette(brewer.pal(8,"Blues"))(length(levels(Pall$group)))
+ggplot(Pall, aes(x = species, y = MY)) +
+  geom_bar(aes(color = Pall$group, fill = Pall$group), stat = "identity") +
+  scale_color_manual(values = rep("gray40",30))  + theme(legend.position="right") +
+  theme_minimal() +
+  theme(legend.title = element_blank()) +
+  scale_fill_manual(values = cols) +
+  ylab("Transposition Events per MY") +
+  xlab("Branch")
+```
+
+# U=Duplications
+```{r echo=FALSE}
+
+##################################################################
+# U=Duplication
+##################################################################
+
+Uall<-do.call("rbind", Usummary)
+Uall$species<-as.factor(Uall$species)
+Uall$species<-(factor(Uall$species,levels(Uall$species)[c(7,9,1,3,8,10,4,6,11,5,12,2,13)]))
+
+
+# rename labels for ranges
+levels(Uall$group)[levels(Uall$group)=="(0,10]"]<-" 0.01 kb"
+levels(Uall$group)[levels(Uall$group)=="(10,50]"]<-" 0.01-0.05 kb"
+levels(Uall$group)[levels(Uall$group)=="(50,100]"]<-" 0.05-0.1 kb"
+levels(Uall$group)[levels(Uall$group)=="(100,500]"]<-" 0.1-0.5 kb"
+levels(Uall$group)[levels(Uall$group)=="(500,1e+03]"]<-" 0.5-1.0 kb"
+levels(Uall$group)[levels(Uall$group)=="(1e+03,1.5e+03]"]<-" 1.0-1.5 kb"
+levels(Uall$group)[levels(Uall$group)=="(1.5e+03,2e+03]"]<-" 1.5-2.0 kb"
+levels(Uall$group)[levels(Uall$group)=="(2e+03,2.5e+03]"]<-" 2.0-2.5 kb"
+levels(Uall$group)[levels(Uall$group)=="(2.5e+03,5e+03]"]<-" 2.5-5.0 kb"
+levels(Uall$group)[levels(Uall$group)=="(5e+03,1e+04]"]<-" 5.0-10 kb"
+levels(Uall$group)[levels(Uall$group)=="(1e+04,2e+04]"]<-" 10-20 kb"
+levels(Uall$group)[levels(Uall$group)=="(2e+04,3e+04]"]<-" 20-30 kb"
+levels(Uall$group)[levels(Uall$group)=="(3e+04,4e+04]"]<-" 30-40 kb"
+levels(Uall$group)[levels(Uall$group)=="(4e+04,5e+05]"]<-" >40 kb"
+
+
+Uall$group<-as.factor(Uall$group)
+#levels(Uall$group)<-levels(Uall$group)[c(9,1:8)]
+#levels(Uall)<-rev(levels(Uall))
+
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(RColorBrewer)
+
+theme_set(theme_pubclean())
+
+cols <- colorRampPalette(brewer.pal(8,"Blues"))(length(levels(Uall$group)))
+ggplot(Uall, aes(x = species, y = MY)) +
+  geom_bar(aes(color = Uall$group, fill = Uall$group), stat = "identity") +
+  scale_color_manual(values = rep("gray40",30))  + theme(legend.position="right") +
+  theme_minimal() +
+  theme(legend.title = element_blank()) +
+  scale_fill_manual(values = cols) +
+  ylab("Duplication Events per MY") +
+  xlab("Branch")
+
+```
+
+
+# I=Insertions
+```{r echo=FALSE}
+
+##################################################################
+# I=Insertions
+##################################################################
+
+Iall<-do.call("rbind", Isummary)
+Iall$species<-as.factor(Iall$species)
+Iall$species<-(factor(Iall$species,levels(Iall$species)[c(7,9,1,3,8,10,4,6,11,5,12,2,13)]))
+
+
+# rename labels for ranges
+levels(Iall$group)[levels(Iall$group)=="(0,10]"]<-" 0.01 kb"
+levels(Iall$group)[levels(Iall$group)=="(10,50]"]<-" 0.01-0.05 kb"
+levels(Iall$group)[levels(Iall$group)=="(50,100]"]<-" 0.05-0.1 kb"
+levels(Iall$group)[levels(Iall$group)=="(100,500]"]<-" 0.1-0.5 kb"
+levels(Iall$group)[levels(Iall$group)=="(500,1e+03]"]<-" 0.5-1.0 kb"
+levels(Iall$group)[levels(Iall$group)=="(1e+03,1.5e+03]"]<-" 1.0-1.5 kb"
+levels(Iall$group)[levels(Iall$group)=="(1.5e+03,2e+03]"]<-" 1.5-2.0 kb"
+levels(Iall$group)[levels(Iall$group)=="(2e+03,2.5e+03]"]<-" 2.0-2.5 kb"
+levels(Iall$group)[levels(Iall$group)=="(2.5e+03,5e+03]"]<-" 2.5-5.0 kb"
+levels(Iall$group)[levels(Iall$group)=="(5e+03,1e+04]"]<-" 5.0-10 kb"
+levels(Iall$group)[levels(Iall$group)=="(1e+04,2e+04]"]<-" 10-20 kb"
+levels(Iall$group)[levels(Iall$group)=="(2e+04,3e+04]"]<-" 20-30 kb"
+levels(Iall$group)[levels(Iall$group)=="(3e+04,4e+04]"]<-" 30-40 kb"
+levels(Iall$group)[levels(Iall$group)=="(4e+04,5e+05]"]<-" >40 kb"
+
+
+
+Iall$group<-as.factor(Iall$group)
+#levels(Iall$group)<-levels(Iall$group)[c(9,1:8)]
+#levels(Iall)<-rev(levels(Iall))
+
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(RColorBrewer)
+
+theme_set(theme_pubclean())
+
+cols <- colorRampPalette(brewer.pal(8,"Blues"))(length(levels(Iall$group)))
+ggplot(Iall, aes(x = species, y = MY)) +
+  geom_bar(aes(color = Iall$group, fill = Iall$group), stat = "identity") +
+  scale_color_manual(values = rep("gray40",12))  + theme(legend.position="right") +
+  theme_minimal() +
+  theme(legend.title = element_blank()) +
+  scale_fill_manual(values = cols) +
+  ylab("Insertion Events per MY") +
+  xlab("Branch")
+
+```
+
+#### Overall summary
+```{r}
+sumV<-aggregate(Vall$MY, by=list(species=Vall$species), FUN=sum)
+sumP<-aggregate(Pall$MY, by=list(species=Pall$species), FUN=sum)
+sumD<-aggregate(Dall$MY, by=list(species=Dall$species), FUN=sum)
+sumU<-aggregate(Uall$MY, by=list(species=Uall$species), FUN=sum)
+sumI<-aggregate(Iall$MY, by=list(species=Iall$species), FUN=sum)
+colnames(sumV)[2]<-"Inv"
+colnames(sumP)[2]<-"Tra"
+colnames(sumD)[2]<-"Del"
+colnames(sumU)[2]<-"Dup"
+colnames(sumI)[2]<-"Ins"
+all<-merge(sumV,sumP,by="species") %>% merge(.,sumD,by="species") %>% merge(.,sumU,by="species")  %>% merge(.,sumI,by="species") 
+
+m<-as.matrix(all[,-1])
+row.names(m)<-all$species
+heatmap.2(t(m),trace="none",scale="row", Rowv=F, Colv=T,col=(brewer.pal(8,"Blues")),dendrogram="column")
+plot(all$Inv,all$Tra,cex=all$Inv/10,col="gray90",pch=19,xlab="Inversion Events per MY",ylab="Transposition Events per MY")
+text(x=all$Inv,y=all$Tra,all$species,col="black",cex=.6)
+plot(all$Del,all$Dup+all$Ins,cex=all$Del/1000,col="gray90",pch=19,xlab="Deletion Events per MY",ylab="Insertion and Duplication Events per MY")
+text(all$Del,all$Dup+all$Ins,all$species,col="black",cex=.6)
+
+all$total<-rowSums(all[,-1])
+barplot(all$total,las=2,names=all$species,xlab="total number of events per MY")
+barplot(all$Inv/all$total,las=2,names=all$species,xlab="freaction of Inversions by all events")
+barplot(all$Tra/all$total,las=2,names=all$species,xlab="freaction of Transpositions by all events")
+
+```

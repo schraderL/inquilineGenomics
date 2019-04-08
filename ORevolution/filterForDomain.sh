@@ -1,7 +1,7 @@
 
 cd $base/$species/final
 # check fullOR annotation for pfam domains
-nice perl $software/PfamScan/pfam_scan.pl -fasta $species.fullORannotation.fa -dir ~/data/pfam/ -outfile $species.fullORannotation.domains.out -cpu 30
+nice perl $software/PfamScan/pfam_scan.pl -fasta $species.fullORannotation.fa -dir ~/data/pfam/ -outfile $species.fullORannotation.domains.out -cpu $cpu
 
 # extract only those models that have a 7tm_6 domain
 awk '{if ($7=="7tm_6") print $1}' $species.fullORannotation.domains.out|sort|uniq > $species.ORs.7tm6.lst

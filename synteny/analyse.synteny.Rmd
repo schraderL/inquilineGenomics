@@ -1,0 +1,196 @@
+---
+title: "Synteny Analysis Inquilines"
+output:
+  html_document:
+    df_print: paged
+---
+
+### Load libraries
+```{r}
+library(gplots)
+library("RColorBrewer")
+source("~/sciebo/librarySchrader.R")
+
+```
+
+### Load the data from iadhore output.
+
+Object        | source
+------------- | -------------
+genes.txt     | /corefac/cse/lukas/inqGen18/synteny/acromyrmex/output2/genes.txt
+MP            | /corefac/cse/lukas/inqGen18/synteny/acromyrmex/output2/multiplicon_pairs.txt
+segments      | /corefac/cse/lukas/inqGen18/synteny/acromyrmex/output2/segments.txt
+```{r}
+# load all gene info
+Genes<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2/genes.txt",sep="\t",T)
+
+# load mutliplicon pairs
+MP<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2/multiplicon_pairs.txt",sep="\t",T)
+
+# load multiplicon info
+segments<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2/segments.txt",sep="\t",T)
+
+segments$multiplicon<-as.factor(segments$multiplicon)
+
+# split by multiplicon
+segSplit<-split(segments,f=segments$multiplicon)
+
+```
+
+### Prepare a list of all syntenic regions across the 6 analysed genomes
+**Takes some minutes***
+
+```{r eval=FALSE, include=FALSE}
+f<-list()
+for (i in 1:length(segSplit)){
+  #define species and scf for multiplicon
+  species1<-as.character(segSplit[[i]]$genome[1])
+  species2<-as.character(segSplit[[i]]$genome[2])
+  scf1<-as.character(segSplit[[i]]$list[1])
+  scf2<-as.character(segSplit[[i]]$list[2])
+  # select appropriate multiplicon_pair subset
+  MP1<-subset(MP,multiplicon==i)
+  MP.subset<-MP1[grep(paste(species1,species2,sep="|"),MP1$X,perl=T),]
+  
+  # find matches between M1 Parg gene and Ahey gene
+  Genes1tmp<-subset(Genes,list==scf1 & genome == species1)
+  Genes2tmp<-subset(Genes,list== scf2 & genome == species2)
+  # retrieve coordinate of first gene from species 1 for a given multiplicon
+  firstC1<-subset(Genes1tmp,id==as.character(segSplit[[i]]$first[1]),coordinate)
+  # retrieve coordinate of first gene from species 2 for a given multiplicon
+  firstC2<-subset(Genes2tmp,id==as.character(segSplit[[i]]$first[2]),coordinate)
+  # retrieve coordinate of last gene from species 1 for a given multiplicon
+  lastC1<-subset(Genes1tmp,id==as.character(segSplit[[i]]$last[1]),coordinate)
+  # retrieve coordinate of first gene from species 2 for a given multiplicon
+  lastC2<-subset(Genes2tmp,id==as.character(segSplit[[i]]$last[2]),coordinate)
+  
+  Genes1<-subset(Genes1tmp,coordinate<=as.numeric(lastC1) &coordinate>=as.numeric(firstC1)  )
+  Genes2<-subset(Genes2tmp,coordinate<=as.numeric(lastC2) &coordinate>=as.numeric(firstC2)  )
+  colnames(MP.subset)[1]<-"idM"
+  a<-merge(Genes1,MP.subset,by.x="id",by.y="X",all.x=T)
+  #a<-subset(a, id=="AHEY06765")
+  a<-unique(a, by=id)
+  a<-a[!(duplicated(a$id)),]
+  b<-merge(Genes2,MP.subset,by.x="id",by.y="gene_x", all.x=T)
+  #b<-subset(b,gene_x=="PARG07394|PARG07411")
+  b<-b[!(duplicated(b$id)),]
+  colnames(a)[1]<-"idA"
+  colnames(b)[1]<-"idB"
+  final<-merge(a,b,by.x="idA",by.y="X", all=T)
+  
+  ff<-final[,c(1,3,4,5,13,18,19,20,16)]
+  colnames(ff)<-c("G1","S1","C1","St1","G2","S2","C2","St2","G2b")
+  ff$C2<-as.numeric(ff$C2)
+  ff$C1<-as.numeric(ff$C1)
+  f[[i]]<-ff
+  names(f)[i]<-paste(species1,species2,sep="-")
+}
+
+```
+
+### calculate Kendall's rank correlation coefficient for each syntenic region across all genomes.
+
+```{r eval=FALSE, include=FALSE}
+
+lms<-list()
+r2<-NA
+cors<-list()
+kcor<-NA
+for (i in 1:length(f)){
+  tmp<-f[[i]]
+  # calculate Kendall's rank correlation coefficient for each syntenic region across all genomes.
+  cors[[i]]<-cor.test(tmp$C1,tmp$C2,method="kendall")
+  # retrieve the correlation coefficient
+  kcor[i]<-abs(cors[[i]]$estimate)
+}
+
+names(kcor)<-names(f)
+
+```
+
+**Remove all entries from syntenic regions that contain less than 25 syntenic genes**
+```{r eval=FALSE, include=FALSE}
+# remove all entries from syntenic regions that contain less than 25 syntenic genes
+# basic quality control
+for (i in 1:length(f)){
+  if(sum(f[[i]][,5]==as.character(f[[i]][,9]),na.rm=T)<25){kcor[i]<-NA}
+}
+save(kcor,file="/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2.correlations.Rdata")
+```
+
+
+
+```{r}
+load(file="/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2.correlations.Rdata")
+```
+
+
+#### Retrieve all correlation values for each species pair (in list of lists "ksets")
+##### calculate matrices mean, median and number of correlations < 1
+```{r}
+m<-matrix(nrow=6,ncol=6)
+colnames(m)<-c("ACHA","PARG","AHEY","AINS","AECH","ACOL")
+rownames(m)<-c("ACHA","PARG","AHEY","AINS","AECH","ACOL")
+m2<-m
+m3<-m
+m4<-m
+ksets<-list()
+for(col in 1:6){
+  ksets[[col]]<-list()
+  names(ksets)[col]<-colnames(m)[col]
+  for (row in 1:6){
+    ksets[[col]][[row]]<-c(kcor[grep(paste(colnames(m)[col],rownames(m)[row],sep="-"),names(kcor))],kcor[grep(paste(colnames(m)[row],rownames(m)[col],sep="-"),names(kcor))])
+    names(ksets[[col]])[row]<-rownames(m)[row]
+    if (col==row){next}
+    # median kendall's correlation
+    m[row,col]<-median(ksets[[col]][[row]],na.rm=T)
+    # mean kendall's correlation
+    m2[row,col]<-mean(ksets[[col]][[row]],na.rm=T)
+    # percent of kendall's correlation below cutoff
+    m3[row,col]<-(sum(ksets[[col]][[row]]<1,na.rm = T)/length(ksets[[1]][[2]]))*100
+    #m3[row,col]<-(sum(ksets[[col]][[row]]<1,na.rm = T)/length(ksets[[1]][[2]]))*100
+  }
+}
+
+library("RColorBrewer")
+heatmap.2(m,dendrogram='none', Rowv=FALSE, Colv=FALSE,trace='none',col=rev(brewer.pal(9,"YlGnBu")))
+heatmap.2(m2,dendrogram='none', Rowv=FALSE, Colv=FALSE,trace='none',col=rev(brewer.pal(9,"YlGnBu")))
+heatmap.2(m3,trace='none',col=brewer.pal(9,"YlGnBu"),dendrogram='none', Rowv=FALSE, Colv=FALSE)
+
+```
+```{r fig.height=3, fig.width=2}
+AcolComparison<-as.data.frame(cbind(unlist(ksets[["ACOL"]])))
+AcolComparison$V2<-as.factor(substr(x = rownames(AcolComparison),1,4))
+colnames(AcolComparison)<-c("Kendall","species")
+AcolComparison<-subset(AcolComparison,species!="ACOL")
+AcolComparison$species<-droplevels(AcolComparison$species)
+AcolComparison$species<-(factor(AcolComparison$species,levels(AcolComparison$species)[c(2,3,1,4,5)]))
+boxplot(Kendall~species,data=AcolComparison,outline=F,col=c(goodCols[c(4,2,2,1,5)]),ylim=c(0.985,1.005),yaxt="n",xaxt="n",ylab="Kendall's correlation coefficient",lwd=2)
+axis(2,at=c(0.985,0.99,0.995,1))
+par(xpd=NA)
+text(y=0.983,x=1:5+0.1,levels(AcolComparison$species),srt=-45,pos=1)
+par(xpd=F)
+segments(y0=1.001,y1=1.001,x0=0.75,x1=2.25,lwd=1.5)
+segments(y0=1.001,y1=1.001,x0=2.75,x1=5.25,lwd=1.5)
+
+segments(y0=1.001,y1=1.004,x0=4,x1=4,lwd=1.5)
+segments(y0=1.001,y1=1.004,x0=1.5,x1=1.5,lwd=1.5)
+segments(y0=1.004,y1=1.004,x0=1.5,x1=4,lwd=1.5)
+willy<-wilcox.test(c(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AHEY"]]),c(ksets[["ACOL"]][["AINS"]],ksets[["ACOL"]][["ACHA"]],ksets[["ACOL"]][["PARG"]]))
+
+text(paste("p <",round(willy$p.value,3)),y=1.005,x=2.75,font=2)
+
+dev.print(pdf,        # copies the plot to a the PDF file
+          "/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2/synteny.pdf")
+
+
+```
+```{r}
+wilcox.test(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AHEY"]])
+wilcox.test(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AINS"]])
+wilcox.test(ksets[["ACOL"]][["AHEY"]],ksets[["ACOL"]][["ACHA"]])
+wilcox.test(ksets[["ACOL"]][["AHEY"]],ksets[["ACOL"]][["PARG"]])
+wilcox.test(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["ACHA"]])
+
+```
+

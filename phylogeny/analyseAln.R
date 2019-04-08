@@ -40,7 +40,7 @@ pdf(paste(args[3],".pdf",sep=""))
   write.table(draw,paste(args[3],".raw.tsv",sep=""),quote=F,sep="\t",row.names=F)
 
   t<-log(tits,10)
-  m<-log(mdists,10)
+  m<-mdists
   d<-as.data.frame(cbind(t,m))
   d$name<-file.names
   d<-d[is.finite(d[,1]) & is.finite(d[,2]),]
@@ -55,4 +55,4 @@ dev.off()
 #B <- DNAStringSet(B)
 #res <- lapply(A, vmatchPattern, B, max.mismatch=5)
 
-# get over each alignment and pick out weird alignments, where one gene is extremely different from the others 
+# get over each alignment and pick out weird alignments, where one gene is extremely different from the others

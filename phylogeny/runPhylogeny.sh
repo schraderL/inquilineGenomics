@@ -274,3 +274,5 @@ nice raxmlHPC-PTHREADS -m GTRCAT -J STRICT -z RAxML_bootstrap.5boot500 -n 5stric
 nice raxmlHPC-PTHREADS -m GTRCAT -J MR -z RAxML_bootstrap.5boot500 -n 5majrule
 nice raxmlHPC-PTHREADS -m GTRCAT -J MRE -z RAxML_bootstrap.5boot500 -n 5extmajrule
 #https://sco.h-its.org/exelixis/web/software/raxml/hands_on.html
+
+#see /corefac/cse/lukas/inqGen18/phylogeny/raxml/5/RAxML_bipartitionsBranchLabels.5bp

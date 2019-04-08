@@ -1,9 +1,9 @@
 
-We used CAFE to model gene family size evolution across the phylogeny of leaf-cutting ants. We only included Acromyrmex species and Atta colombica in the analysis as these genomes were sequenced using the same approach (long-range Illumina libraries). 
+We used CAFE to model gene family size evolution across the phylogeny of leaf-cutting ants. We only included Acromyrmex species and Atta colombica in the analysis as these genomes were sequenced using the same approach (long-range Illumina libraries).
 
 
 0. Combine the MCL clusterd gene families with the MCMCtree computed ultrametric tree
-# run.geneFamilies.mcl.allAttines.sh
+# run.geneFamilies.mcl.sh
 
 1. First run error estimation for each genome: run.CAFError.sh.
 # run.CAFError.Acro.Acol.sh

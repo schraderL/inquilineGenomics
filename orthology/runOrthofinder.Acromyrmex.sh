@@ -17,10 +17,6 @@ ln -s $file data/$short.pep.fa
 done
 ########################################
 
-################################################################################
-# RUN ON ALL ATTINES
-################################################################################
-
 ########################################
 # clean up peptide files to make their structure identical between inquilines and attines
 mkdir $base/cleanData
@@ -40,29 +36,4 @@ cd $base
 # consider removing all those proteins that have been identified as being TE-derived.
 
 nice orthofinder -t 32 -a 10 -f cleanData/
- mv cleanData/Results_Sep03/
-
-################################################################################
-# RUN ON ALL ACROMYRMEX + ACOL
-################################################################################
-
-########################################
- # clean up peptide files to make their structure identical between inquilines and attines
- mkdir $base/cleanData.Acromyrmex
- cd $base/cleanData.Acromyrmex
- for file in $(find $base/data/ -name "*.pep.fa"|egrep "Acha|Parg|Ahey|Aech|Ains|Acol")
- do
-   echo "cleaning $file"
-   name=$(echo $file|rev|cut -f 1 -d "/"|rev)
-   perl -pe 's/(>.*?)[\s|-].*/$1$2/g' $file > $name
- done
-########################################
-
- ########################################
- # run Orthoginder on cleaned pep files
- cd $base
- # Use files with "TE proteins"
- # consider removing all those proteins that have been identified as being TE-derived.
-
- nice orthofinder -t 32 -a 10 -f cleanData.Acromyrmex/
-  mv cleanData/Results_Sep03/
+ mv cleanData/Results_Sep03/ 

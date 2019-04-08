@@ -99,109 +99,24 @@ export ORfa=$base/data/$q1.$q2.$q1.ORs.fa
 #set which genome to annotate. Requires a species abbreviation, a folder where the assembly fasta file is located, a link to the fasta file
 #and a file with transcript data if available.
 
-# #Aech Acromyrmex echinatior
-# export species=Aech
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/attines/assembly
-# export genomeFa=$genomeFolder"/"$species".genome.fa"
-# export transcript=
-#
-#
-# #Ahey Acromyrmex heyeri
-# export species=Ahey
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/inquilines_2.0/Acromyrmex_heyeri/genome
-# export genomeFa=$genomeFolder"/Acromyrmex_heyeri.v2.0.fa"
-# export transcript=/usr/local/home/lschrader/data/genomes/inquilines/v1.1/Ahey/Acromyrmex_heyeri.transcripts.gtf
-#
-# #Parg Pseudoatta_argentina
-# export species=Parg
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/inquilines_2.0/Pseudoatta_argentina/genome/
-# export genomeFa=$genomeFolder"/Pseudoatta_argentina.v2.0.fa"
-# export transcript=
-#
-# #Ains Acromyrmex_insinuator
-# export species=Ains
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/inquilines_2.0/Acromyrmex_insinuator/genome
-# export genomeFa=$genomeFolder"/Acromyrmex_insinuator.v2.0.fa"
-# export transcript=~/data/genomes/inquilines/v1.0/Ains/Acromyrmex_insinuator.transcripts.gtf
-#
-# #Acep Atta_cephalotes
-# export species=Acep
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/attines/assembly
-# export genomeFa=$genomeFolder"/Acep.genome.fa"
-# export transcript=
-#
-# #Acha Acromyrmex_charruanus
-# export species=Acha
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/inquilines_2.0/Acromyrmex_charruanus/genome
-# export genomeFa=$genomeFolder"/Acromyrmex_charruana.v2.0.fa"
-# export transcript=
-#
-# #Acol Atta colombica
-# export species=Acol
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/attines/assembly
-# export genomeFa=$genomeFolder"/Acol.v1.0.mask.fa"
-# export transcript=
-#
-# #Tsep Trachymyrmex septentrionalis
-# export species=Tsep
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/attines/assembly
-# export genomeFa=$genomeFolder"/$species.v1.0.filterBacteria.mask.fa"
-# export transcript=/usr/local/home/lschrader/data/genomes/attines/cufflinks_transcripts/$species/transcripts.gtf
-#
-# #Tzet Trachymyrmex zeteki
-# export species=Tzet
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/attines/assembly
-# export genomeFa=$genomeFolder"/$species.v1.0.filterBacteria.mask.fa"
-# export transcript=/usr/local/home/lschrader/data/genomes/attines/cufflinks_transcripts/$species/transcripts.gtf
-#
-# #Tcor Trachymyrmex cornetzi
-# export species=Tcor
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/attines/assembly
-# export genomeFa=$genomeFolder"/$species.v1.0.filterBacteria.mask.fa"
-# export transcript=/usr/local/home/lschrader/data/genomes/attines/cufflinks_transcripts/$species/transcripts.gtf
-#
-# #Ccos Cyphomyrmex costatus
-# export species=Ccos
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/attines/assembly
-# export genomeFa=$genomeFolder"/$species.v1.0.filterBacteria.mask.fa"
-# export transcript=/usr/local/home/lschrader/data/genomes/attines/cufflinks_transcripts/$species/transcripts.gtf
-#
-# #Agra Anoplolepis_gracilipes_PacBio_assembly
-# export species=Agra
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/GAGA
-# export genomeFa=$genomeFolder"/Anoplolepis_gracilipes_PacBio_assembly.fasta"
-# export transcript=
-#
-# #Alob Acromyrmex_lobicornis_PacBio_assembly
-# export species=Alob
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/GAGA
-# export genomeFa=$genomeFolder"/Acromyrmex_lobicornis_PacBio_assembly.fasta"
-# export transcript=
-#
-# #Plob Paratrechina_longicornis_PacBio_assembly
-# export species=Plob
-# export genomeFolder=/usr/local/home/lschrader/data/genomes/GAGA
-# export genomeFa=$genomeFolder"/Paratrechina_longicornis_PacBio_assembly.fasta"
-# export transcript=
-#
-# #Pcal Pogonomyrmex californicus
-# export species=Pcal
-# export genomeFolder=/corefac/cse/lukas/genomes/Pcal
-# #rewrapped with fastareformat
-# export genomeFa=$genomeFolder"/P.cal_polished_new_assembly.fasta"
-# export transcript=
-
-#Ains Acromyrmex_insinuator v2.1
-export species=Ains
-export genomeFolder=/corefac/cse/lukas/inqGen18/inquilines_v2.1/Acromyrmex_insinuator.2.1/genome/
-export genomeFa=$genomeFolder"/Acromyrmex_insinuator.v2.1.fa"
+# usage: bash scripts/ORannotation.190405.sh Ahey /corefac/cse/lukas/inqGen18/inquilines_v2.1/Acromyrmex_heyeri.2.1/genome Acromyrmex_heyeri.v2.1.fa
+export species=$1
+export genomeFolder=$2
+export genomeFa=$2"/"$3
 export transcript=
 
-#Ains Pseudoatta_argentina v2.1
-export species=Parg
-export genomeFolder=/corefac/cse/lukas/inqGen18/inquilines_v2.1/Pseudoatta_argentina.2.1/genome/
-export genomeFa=$genomeFolder"/Pseudoatta_argentina.v2.1.fa"
-export transcript=
+echo "echo s1: $q1 s2: $q2 s3: $q3"
+echo "base: $base"
+echo ""
+echo "$0 for $species on $2/$3"
+
+read -p "start? y/n " confirmation
+
+if [[ ! "$confirmation"  == "y" ]]
+then
+    echo "Aborted."
+    exit 1
+fi
 
 
 ###################################################
@@ -211,6 +126,25 @@ export transcript=
 ###################################################
 
 # create all directories that will be required for the pipeline
+echo "create all directories that will be required for the pipeline"
+echo "$base/$species"
+echo "$base/$species/EVM"
+echo "$base/$species/EVM/tmpGff"
+echo "$base/$species/exonerate"
+echo "$base/$species/exonerate/gff"
+echo "$base/$species/exonerate/raw"
+echo "$base/$species/exonerate/fa"
+echo "$base/$species/exonerate/PROTEIN"
+echo "$base/$species/exonerate/protFa/"
+echo "$base/$species/GeMoMa/"
+echo "$base/$species/GeMoMa/$q1"
+echo "$base/$species/GeMoMa/$q2"
+echo "$base/$species/GeMoMa/$q3"
+echo "$base/$species/singleExon/"
+echo "$base/$species/final"
+echo "$base/$species/final/filtering"
+echo "$base/$species/pfam"
+
 mkdir $base/$species
 mkdir $base/$species/EVM
 mkdir $base/$species/EVM/tmpGff
@@ -230,9 +164,9 @@ mkdir $base/$species/final/filtering
 mkdir $base/$species/pfam
 
 # prepare config files that will be used
-cp ~/data/OR/config_raw $base
-cp ~/data/OR/config_raw2 $base
-cp ~/data/OR/EVM.weights.txt $base
+#cp ~/data/OR/config_raw $base
+#cp ~/data/OR/config_raw2 $base
+#cp ~/data/OR/EVM.weights.txt $base
 
 ###################################################
 #==================================================
@@ -244,10 +178,13 @@ cd $base/$species
 
 # run in parallel
 # Predict ORs with Exonerate pipeline (cf Zhou et al. 2004)
+echo "Predict ORs with Exonerate pipeline (cf Zhou et al. 2004)"
 nice bash $scripts/runExonerate.sh > runExonerate.output 2> runExonerate.err &
 # Predict ORs with GeMoMa
+echo "# Predict ORs with GeMoMa"
 nice bash $scripts/runGeMoMa.pipe.sh > runGeMoMa.output 2> runGeMoMa.err &
 # blast reference OR exons against target genome for further evidence
+echo "blast reference OR exons against target genome for further evidence"
 nice bash $scripts/runExonBlast.sh > runExonBlast.output 2> runExonBlast.err &
 
 # wait till the 3 jobs above are finished (takes several hours)

@@ -1,0 +1,17 @@
+# Readme for CAFE gene family analysis
+
+1. Run 2-parameter models to get estimates for each branches
+/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN1
+/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN2
+# Maybe repeat runs to get lower likelihoods
+
+2. Cluster models in R.
+/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/plotCAFE.AcroAtta.html
+
+3. Choose 5-parameter models
+/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN1C
+/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN2C
+/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN3C
+
+4. test other 5-parameter models
+/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN1DC
