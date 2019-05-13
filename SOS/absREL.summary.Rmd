@@ -1,0 +1,261 @@
+---
+title: "Inquiline Genomics: analysis and summary of absREL"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+# Input data 
+### Load environment
+```{r}
+#install.packages("rjson")
+library("rjson")
+library(plyr)
+library(tidyr)
+```
+
+### Locate data
+```{r}
+folder<-"/Users/lukas/sciebo/inquilineGenomics18/SOS/results/"
+files<-dir(folder,pattern =".json")
+```
+
+### Retrieve branch wide dN/dS estimates for all SCOs
+```{r}
+
+# branch-wise dN/dS rates
+omegas<-list()
+
+# gene names for each OG
+branchNames<-list()
+
+# pvalues for each branch and OG
+pvalues<-list()
+
+# other metric (currently branch lengths)
+others<-list()
+
+# dN rates (improper)
+dNs<-list()
+
+# dS rates (improper)
+dSs<-list()
+
+
+# loop over json file from each SCO and retrieve data. Store data in data frames 
+for (q in 1:length(files)){
+  OG<-gsub(pattern="(OG[0-9]{7})\\..*","\\1",perl=T,x=files[q])
+  result <- fromJSON(file = paste(folder,files[q],sep=""))
+  
+  omega<-NA
+  pvals<-NA
+  other<-NA
+  dN<-NA
+  dS<-NA
+  for (i in 1:length(result$`branch attributes`$`0`)){
+    omega[i]<-result$`branch attributes`$`0`[[i]]$`Baseline MG94xREV omega ratio`
+    pvals[i]<-result$`branch attributes`$`0`[[i]]$`Corrected P-value`
+    other[i]<-result$`branch attributes`$`0`[[i]]$`Baseline MG94xREV`
+    dN[i]<-result$`branch attributes`$`0`[[i]]$`Rate Distributions`[[1]][1]
+    dS[i]<-result$`branch attributes`$`0`[[i]]$`Rate Distributions`[[1]][2]
+    names(omega)[i]<-names(result$`branch attributes`$`0`)[i]
+    names(pvals)[i]<-names(result$`branch attributes`$`0`)[i]
+    omegas[[OG]]<-omega
+    pvalues[[OG]]<-pvals
+    others[[OG]]<-other
+    dNs[[OG]]<-dN
+    dSs[[OG]]<-dS
+  }
+  names(pvalues[[OG]])<-gsub(x=names(pvals),pattern="([A-Z]{4})[0-9]{5}","\\1",perl=T)
+  names(others[[OG]])<-gsub(x=names(other),pattern="([A-Z]{4})[0-9]{5}","\\1",perl=T)
+  branchNames[[OG]]<-names(omega)
+  names(omegas[[OG]])<-gsub(x=names(omega),pattern="([A-Z]{4})[0-9]{5}","\\1",perl=T)
+  names(branchNames[[OG]])<-gsub(x=names(omega),pattern="([A-Z]{4})[0-9]{5}","\\1",perl=T)
+  reorder<-order(names(omegas[[OG]]))
+  
+  omegas[[OG]]<-omegas[[OG]][reorder]
+  pvalues[[OG]]<-pvalues[[OG]][reorder]
+  branchNames[[OG]]<-branchNames[[OG]][reorder]
+  others[[OG]]<-others[[OG]][reorder]
+}
+```
+
+### Create dataframes
+```{R}
+# dN/dS
+om <- data.frame(do.call("rbind", omegas))
+# branch names
+bn <- data.frame(do.call("rbind", branchNames))
+# pvalues
+pv <- data.frame(do.call("rbind", pvalues))
+# other
+ot <- data.frame(do.call("rbind", others))
+# dN
+dn <- data.frame(do.call("rbind", dNs))
+# dS
+ds <- data.frame(do.call("rbind", dSs))
+
+### create one big data frame
+colnames(bn)<-paste(colnames(bn),"bn",sep="")
+colnames(om)<-paste(colnames(om),"om",sep="")
+colnames(pv)<-paste(colnames(pv),"pv",sep="")
+allABSREL<-cbind(bn,om) %>% cbind(.,pv) 
+head(allABSREL)
+allABSREL$OGid<-row.names(allABSREL)
+
+```
+
+### Plot results
+```{r}
+boxplot(dn,outline=F)
+boxplot(ds,outline=T)
+boxplot(om,outline=F,las=2)
+boxplot(ot,outline=F,las=2)
+boxplot(subset(om,PARG<100 & AHEY<100 & P1 <100 & AINS<100 & ACHA <100 & ACOL<100 & AECH<100 & A1<100 & A2<100),outline=F,las=2)
+```
+
+### Load GO annotations
+```{r}
+# load GO annotations
+goFiles<-list.files(path="/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data/", pattern="^gene2GO.*tsv$", all.files=T, full.names=T)
+
+goAnns<-list()
+i<-1
+for (i in 1:length(goFiles)){
+  goAnns[[i]]<-read.csv(goFiles[i], sep="\t",F)
+}
+
+names(goAnns)<-gsub(x=goFiles,pattern=".*\\.(.*).tsv","\\1",perl=T)
+rGoAnns<-do.call(rbind, goAnns)
+
+# read in list of GO terms in topGO object:
+######################################################
+#geneID2GO<-readMappings("/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data/all.gene2GO.tsv")
+
+
+```
+
+
+### retrieve GO annotations for each OG
+```{r}
+tmp<-allABSREL
+# loop over GO annotations for  "Acromyrmex_charruanus","Acromyrmex_heyeri", "Acromyrmex_insinuator", "Atta_colombica", "Pseudoatta_argentina" 
+for (i in names(goAnns)[c(1,2,3,5,7)]){
+  abbr<-gsub(x=i,pattern="(.).*_(...).*","\\U\\1\\U\\2",perl=T)
+  tmp<-merge(tmp,goAnns[[i]],by.x=paste(abbr,"bn",sep=""),by.y="V1",all.x=T)
+  colnames(tmp)[length(colnames(tmp))]<-paste(abbr,"go",sep="")
+}
+GOtmp<-tmp
+```
+
+```{r}
+GOtmp$GO<-NA
+for (i in 1:dim(tmp)[1]){
+  GOtmp$GO[i]<-paste(unique(c(as.character(tmp$AINSgo[i]),as.character(tmp$AHEYgo[i]))),collapse=", ")
+}
+
+```
+
+
+### add swissprot names
+```{r}
+swiss1<-read.csv("~/sciebo/inquilineGenomics18/inquilines_v2.1/Acromyrmex_insinuator.2.1/annotation/function_annotation/Acromyrmex_insinuator.v2.1.pep.fa.blast.swissprot.best",sep="\t")
+swiss2<-read.csv("~/sciebo/inquilineGenomics18/inquilines_v2.1/Acromyrmex_heyeri.2.1/annotation/function_annotation/Acromyrmex_heyeri.v2.1.pep.fa.blast.swissprot.best",sep="\t")
+tmp<-allABSREL
+tmp<-merge(tmp,swiss1,by.x="AINSbn",by.y="Query_id",all.x=T)
+colnames(tmp)[colnames(tmp)=="Subject_annotation"]<-"sAINS"
+tmp<-merge(tmp,swiss2,by.x="AHEYbn",by.y="Query_id",all.x=T)
+colnames(tmp)[colnames(tmp)=="Subject_annotation"]<-"sAHEY"
+AINSswissprot<-gsub(x=tmp$sAINS,pattern=" OS.*","",perl=T)
+SWtmp<-tmp
+```
+
+
+### add interpro annotations
+```{r}
+ipr1<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/inquilines_v2.1/Acromyrmex_insinuator.2.1/annotation/function_annotation/Acromyrmex_insinuator.v2.1.pep.fa.iprscan.gene.ipr",sep="\t",F,stringsAsFactors = F)
+tmp3<-unite(ipr1,"IPR",colnames(ipr1)[3:dim(ipr1)[2]],sep="|")
+tmp<-allABSREL
+tmp<-merge(tmp,tmp3,by.x="AINSbn",by.y="V1",all.x=T)
+
+tmp$IPR<-gsub(x=tmp$IPR,pattern="\\|\\|+","",perl=T)
+IPRtmp<-tmp
+```
+
+### add kegg annotations
+```{r}
+kegg1<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/inquilines_v2.1/Acromyrmex_insinuator.2.1/annotation/function_annotation/Acromyrmex_insinuator.v2.1.pep.fa.KEGG.K",sep="\t",T,stringsAsFactors = F,skip=2)
+#tmp4<-strsplit(kegg1$ko_id.rank.evalue.score.identity.ko_definition,"\\|")
+#tmp5<-do.call(rbind, tmp4)
+tmp<-allABSREL
+tmp<-merge(tmp,kegg1,by.x="AINSbn",by.y="X..query",all.x=T)
+kegg<-tmp$ko_id.rank.evalue.score.identity.ko_definition
+keggtmp<-tmp
+
+```
+
+### create large data frame
+```{r}
+finalize<-allABSREL
+allABSREL<-merge(allABSREL,GOtmp[,c("GO","OGid")],all.x=T,all.y=F,by="OGid")
+colnames(allABSREL)[colnames(allABSREL)=="GO.y"]<-"GO"
+allABSREL<-merge(allABSREL,SWtmp[,c("OGid","sAINS")],all.x=T,all.y=F,by="OGid")
+
+allABSREL<-merge(allABSREL,IPRtmp[,c("OGid","IPR")],all.x=T,all.y=F,by="OGid")
+
+allABSREL<-merge(allABSREL,keggtmp[,c("OGid","ko_id.rank.evalue.score.identity.ko_definition")],all.x=T,all.y=F,by="OGid")
+colnames(allABSREL)[colnames(allABSREL)=="ko_id.rank.evalue.score.identity.ko_definition"]<-"kegg"
+
+
+```
+
+```{r}
+PARG<-subset(allABSREL,PARGpv<0.00005)
+PARG[order(PARG$PARGpv),]
+#subset(allABSREL,OGid=="OG0003577")
+
+AINS<-subset(allABSREL,AINSpv<0.00005)
+AINS[order(AINS$AINSpv),]
+
+P1<-subset(allABSREL,P1pv<0.00005)
+P1[order(P1$P1pv),]
+
+subset(allABSREL,P1pv<0.005 & AINSpv<0.005)
+```
+
+
+### write to file
+```{r}
+write.table(allABSREL,"/Users/lukas/sciebo/inquilineGenomics18/SOS/data/absREL.tsv", sep = "\t",quote = F, row.names=F)
+```
+
+

@@ -1,0 +1,184 @@
+---
+title: "Inquiline Genomics: GO enrichment analysis of RELAX results"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+# Load Environment
+## Load libraries
+
+```{r}
+######################
+# Load packages
+######################
+library("ape")
+library("Biostrings")
+library("ggplot2")
+library("ggtree")
+library("phytools")
+library("treeman")
+library(diversitree)
+library(phytools)
+library(geiger)
+library(cowplot)
+library(RColorBrewer)
+source("~/sciebo/librarySchrader.R")
+library(gplots)
+library(randomcoloR)
+library(data.table)
+
+```
+
+```{r}
+# load cladesTree object
+load("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/cladesTree.Robject")
+# load tree_dt object
+load("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/tree_dt.Robject")
+tipDF4<-read.table("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/tipsDF4.tsv",T,sep="\t")
+```
+
+```{r}
+tipDF4$species<-as.factor(substr(tipDF4$gene,1,4))
+
+tipDF4$parasite<-NA
+tipDF4$parasite[grep("Acha",tipDF4$species)]<-"Acha"
+tipDF4$parasite[grep("Ains",tipDF4$species)]<-"Ains"
+tipDF4$parasite[grep("Parg",tipDF4$species)]<-"Parg"
+
+#targetClades<-unique(unlist(subset(tipDF4,smallerCladesTrait=="Parg/Ains/Acha",clade)))
+#tipDF4subset<-subset(tipDF4,smallerCladesTrait=="Parg/Ains/Acha")
+
+#targetClades<-unique(unlist(subset(tipDF4,smallerCladesTrait=="Parg/Ains",clade)))
+#tipDF4subset<-subset(tipDF4,smallerCladesTrait=="Parg/Ains")
+
+#targetClades<-unique(unlist(subset(tipDF4,smallerCladesTrait!="0",clade)))
+#tipDF4subset<-subset(tipDF4,smallerCladesTrait!="0")
+
+targetClades<-unique(tipDF4$clade)
+tipDF4subset<-tipDF4
+
+
+subsetTrees<-cladesTree[targetClades] 
+
+ggSubsetTrees<-list()
+ggST<-list()
+for (i in 1:length(subsetTrees)){
+  subtit<-paste("group=", tipDF4[tipDF4$clade==targetClades[i],5][1],"SF=",tipDF4[tipDF4$clade==targetClades[i],3][1],sep=" ")
+  ggSubsetTrees[[i]]<-ggtree(subsetTrees[[i]],ladderize = T,right = T)
+  infoDF<-subset(tipDF4subset,gene %in% subsetTrees[[i]]$tip.label)
+  ggSubsetTrees[[i]]<-ggSubsetTrees[[i]]%<+% infoDF
+  ggST[[i]]<-ggSubsetTrees[[i]] + geom_tiplab(cex=2,aes(fill = factor(parasite)),
+                color = "black", # color for label font
+                geom = "label",  # labels not text
+                label.padding = unit(0.15, "lines"), # amount of padding around the labels
+                label.size = 0) + 
+             scale_fill_manual(na.value = NA, values=c(Ains =goodCols[2], Parg = goodCols[5],Acha =goodCols[1])) +
+             #theme(legend.position = "bottom", 
+                #legend.title = element_blank(), # no title
+                #legend.key = element_blank()) +
+             ggtitle(paste("Clade",targetClades[i],sep=" "),subtitle =subtit) + xlim(0, .3)+
+             theme(plot.title = element_text(size = 12, face = "bold"),plot.subtitle = element_text(size = 6))
+  }
+
+```
+
+```{r eval=FALSE, fig.height=10, fig.width=10, include=FALSE}
+for (p in levels(tipDF4$smallerCladesTrait)){
+  folderName<-gsub("/",".",p)
+  #dir.create(path = paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/CladePlots/",folderName,sep=""))
+}
+
+for (i in 1:length(ggST)){
+  cladetype<-gsub("/",".",tipDF4[tipDF4$clade==targetClades[i],5][1])
+  subfam<-tipDF4[tipDF4$clade==targetClades[i],3][1]
+  #pdf(paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/CladePlots/",cladetype,"/",subfam,"-Clade-",targetClades[i],".pdf",sep=""),width=3,height=5)
+  print(ggST[[i]])
+  #dev.off()
+}
+
+```
+
+```{r eval=FALSE, include=FALSE}
+for (p in levels(tipDF4$smallerCladesTrait)){
+  folderName<-gsub("/",".",p)
+  #dir.create(path = paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/",folderName,sep=""))
+}
+
+for (i in 1:length(subsetTrees)){
+cladetype<-gsub("/",".",tipDF4[tipDF4$clade==targetClades[i],5][1])
+subfam<-tipDF4[tipDF4$clade==targetClades[i],3][1]
+#write.tree(subsetTrees[[i]],paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/",cladetype,"/",subfam,"-Clade-",names(subsetTrees)[i],".tre",sep=""))
+tipDF4.clade<- subset(tipDF4,gene %in% subsetTrees[[i]]$tip.label)
+
+#write.table(tipDF4.clade,paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/",cladetype,"/",subfam,"-Clade-",names(subsetTrees)[i],".tsv",sep=""),sep="\t",quote = F,row.names = F)
+}
+
+```
+
+```{r}
+tipDF4$annotation<-"complete"
+tipDF4$annotation[grep("[0-9]$",tipDF4$gene,perl=T,invert = T)]<-"fragment"
+tipDF4$annotation[grep("dH$",tipDF4$gene,perl=T)]<-"dH"
+
+tipList<-split(tipDF4,f=list(tipDF4$subfamily,tipDF4$annotation))
+tipList2<-(lapply(tipList, function(x) summary(x$species)))
+
+annotationTable<-do.call(rbind,tipList2)
+annotationTable<-annotationTable[sort(row.names(annotationTable)),]
+annotationTable<-annotationTable[rowSums(annotationTable)!=0,]
+annotationTable
+annotationTableTmp<-cbind(row.names(annotationTable),annotationTable)
+colnames(annotationTableTmp)[1]<-"subfamily"
+write.table(annotationTableTmp,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/annotationTable.tsv",sep="\t",quote = F,row.names = F)
+tipListAll<-split(tipDF4,f=list(tipDF4$subfamily))
+tipListAll2<-(lapply(tipListAll, function(x) summary(x$species)))
+
+annotationTable2<-do.call(rbind,tipListAll2)
+annotationTable2<-annotationTable2[sort(row.names(annotationTable2)),]
+annotationTable2<-annotationTable2[rowSums(annotationTable2)!=0,]
+annotationTable2
+
+```
+```{r fig.height=3.5, fig.width=3.5}
+annotationTable2subset<-annotationTable2[apply(annotationTable2, 1, var)>0,]
+color.palette  <- colorRampPalette(c(goodCols[1],goodCols[8]))(n=50)
+heatmap.2(t(as.matrix(annotationTable2subset)), col = color.palette,scale = "col",trace="none")
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.heatmap.pdf")
+
+```
+
+```{r}
+plot(cladesTree[[2]],cex=.2)
+```
+
+

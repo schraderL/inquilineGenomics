@@ -29,6 +29,10 @@
 #/Users/lukas/CSE/inquilineGenomics/ORevo/ManualCuration/Aech/allAechOrs.clean.final.fa
 #/Users/lukas/CSE/inquilineGenomics/ORevo/ManualCuration/Aech/allAechOrs.clean.final.gff3
 
+#- Used improved manual annotations of Ains ORs by Lukas Schrader
+#/Users/lukas/CSE/inquilineGenomics/ORevo/ManualCuration/Aech/allAechOrs.clean.final.fa
+#/Users/lukas/CSE/inquilineGenomics/ORevo/ManualCuration/Aech/allAechOrs.clean.final.gff3
+
 ###################################################
 #==================================================
 # 0. Define reusable variables

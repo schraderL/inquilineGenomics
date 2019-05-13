@@ -1,0 +1,261 @@
+---
+title: "Inquiline Genomics: GO enrichment analysis of CAFE gene families"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+
+# Bash steps: prepare GO annotations and input files
+```{bash eval=FALSE, include=FALSE}
+cd /Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data/
+cp /Users/lukas/CSE/attine_genomes/reannotations_of_7_ants/*/annotation/function_annotation/*.GO .
+cp /Users/lukas/sciebo/inquilineGenomics18/inquilines_v2.1/*/annotation/function_annotation/*.GO .
+cp /Users/lukas/sciebo/inquilineGenomics18/geneFamilies/MCLclustering/Acro+Acol/mcl/seq.af50lf25.mci.I01.5 .
+cp /Users/lukas/sciebo/inquilineGenomics18/geneFamilies/MCLclustering/Acro+Acol/mcl.clean/largeQC.TEpso.nofilter.MCL.I01.5.cafe.filter100.tsv .
+cp /Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN4C/RUN4C/m6b.cafe .
+
+
+```
+
+```{bash eval=FALSE, include=FALSE}
+cd /Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data/
+
+for i in $(ls /Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data/)
+do
+  species=$(echo $i|cut -f 1 -d ".")
+  #perl /Users/lukas/sciebo/inquilineGenomics18/code/GOenrichment/GOannotation2topGO.pl  $i > gene2GO.$species.tsv
+done
+
+#cat gene2GO.*.tsv > all.gene2GO.tsv
+
+```
+
+# R steps
+## Load environment
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+
+source("https://bioconductor.org/biocLite.R")
+biocLite("GO.db")
+library("topGO")
+library(dplyr)
+library(plyr)
+library(tidyr)
+```
+### Load mcl cluster file and cluster QC file
+```{r}
+
+clustersFile <- list.files(path="/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data/", pattern=".mci.", all.files=T, full.names=T)
+c<-read.csv(clustersFile,sep="\t",F)
+clusterQCFile <- "/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/MCLclustering/Acro+Acol/mcl.clean/finalQC.I01.5.tsv"
+cQC<-read.csv(clusterQCFile,sep="\t",T)
+
+```
+
+### Run sanity check that cluster QC and cluster files match.
+
+Generate large file combining cluster memberships (from mcl) and cluster qc
+```{r}
+#sanity checks
+head(c[1000,1:10])
+subset(cQC,ClusterID=="Cluster1000")
+c2<-unite(c,"all",sep=" ")
+c3<-cbind(c$V1,c2)
+colnames(c3)[1]<-c("ClusterRef")
+m<-merge(cQC,c3,by="ClusterRef",all.x=T)
+m$all<-gsub(x=m$all,"  ","")
+```
+
+
+### Load GO annotations
+```{r}
+# load GO annotations
+goFiles<-list.files(path="/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data/", pattern="^gene2GO.*tsv$", all.files=T, full.names=T)
+
+goAnns<-list()
+i<-1
+for (i in 1:length(goFiles)){
+  goAnns[[i]]<-read.csv(goFiles[i], sep="\t",F)
+}
+
+names(goAnns)<-gsub(x=goFiles,pattern=".*\\.(.*).tsv","\\1",perl=T)
+rGoAnns<-do.call(rbind, goAnns)
+
+# read in list of GO terms in topGO object:
+######################################################
+geneID2GO<-readMappings("/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data/all.gene2GO.tsv")
+
+
+```
+
+### Add cluster GO annotations to large data frame (m)
+```{r}
+ms<-strsplit(m$all," ",)
+
+m$uniqueGOs<-NA
+for (i in 1:length(ms)){
+  geneSearch<-paste(ms[[i]],collapse="|")
+  matchingCol<-grep(pattern=geneSearch,rGoAnns$V1,perl=T)
+  uniqueGOs<-unique(rGoAnns$V2[matchingCol])
+  m$uniqueGOs[i]<-paste(uniqueGOs,collapse = ",")
+}
+
+```
+
+### Load Cafe results file and split pvalues
+```{r}
+
+cafeResultsFile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data/m6b.cafe"
+cafe<-read.csv(cafeResultsFile,sep="\t",skip=10)
+
+sp<-strsplit(as.character(cafe$X.Viterbi.P.values.),',') %>% do.call(rbind, .) %>% gsub("\\(|\\)","",.,perl=T) 
+sp[sp=="-"]<-NA
+sp<-data.frame(sp)
+for(i in 1:dim(sp)[2]){
+  sp[,i]<-as.numeric(as.character(sp[,i]))
+}
+
+
+pvalOrder<-c(c(0,3),c(2,4),c(1,7),c(6,8),c(5,10) )
+
+nodeIds <- data.frame('node' = c("AHEYp","ACHAp","PARGp","ACHA.PARGp","AHEY.ACHA.PARGp","AECHp","AINSp","AECH.AINSp","ACROp","ACOLp","ROOTp"), 
+                   'id' = c(0,2,4,3,1,6,8,7,5,10,9))
+
+nodeIds<-nodeIds[match(pvalOrder, nodeIds$id),]
+colnames(sp)<-nodeIds$node
+
+cafe2<-cbind(cafe,sp)
+all<-merge(m,cafe2,by.x="ClusterID",by.y="X.ID.",all.x=T)
+
+```
+
+### Save giant dataframe to /Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data.tsv
+```{r}
+#write.table(all,"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data.tsv",sep="\t",quote=F,row.names = F)
+```
+
+### create topGO element for Cluster GO annotations
+```{r}
+
+clusterID2go<-list()
+for(i in 1:length(all$ClusterID)){
+  clusterID2go[[i]]<-strsplit(all$uniqueGOs[i],", ")
+  names(clusterID2go)[i]<-as.character(all$ClusterID[i])
+}
+```
+
+### Prepare Objects for GO enrichment analysis
+```{r}
+
+clusterNames.all<-names(clusterID2go)
+#restrict gene space to tested clusters orthologs
+clusterNames<-clusterNames.all
+clusterNames<-clusterNames.all[clusterNames.all %in% subset(all,!is.na(X.Family.wide.P.value.))$ClusterID]
+
+clusterNames <- factor(clusterNames)
+names(clusterNames) <- clusterNames
+
+```
+
+```{r}
+# create a 0/1 matrix (interesting/not interesting)
+######################################
+
+## all parasites
+ClustersOfInterest<-unlist(subset(all,AINSp<0.05|PARGp<0.05|ACHAp<0.05|ACHA.PARGp<0.05,ClusterID))
+
+## all Parg and none in hosts
+ClustersOfInterest<-unlist(subset(all,PARGp<0.05 & AHEY>0.05 & AECH >0.05,ClusterID))
+
+## all hosts
+ClustersOfInterest<-unlist(subset(all,PARGp>0.05 & AHEY<0.05 & AECH <0.05,ClusterID))
+
+## all AINS
+ClustersOfInterest<-unlist(subset(all,AINSp<0.05 & AINS<AECH,ClusterID))
+
+## all clusters getting smaller in parasites
+#ClustersOfInterest<-unlist(subset(all,(AINSp<0.05 & AINS<AECH)|(PARGp<0.05 & PARG<AHEY) |(ACHAp<0.05 & ACHA<AHEY)|(ACHA.PARGp<0.05 & PARG<AHEY & ACHA<AHEY),ClusterID))
+
+clusterList <- factor(as.integer(clusterNames %in% ClustersOfInterest))
+
+table(clusterList)
+names(clusterList) <- clusterNames
+
+```
+
+
+```{r}
+# create object for Biological Process, Molecular Function and Cellular component:
+##################################################################################
+
+GOdata_MF <- new("topGOdata", ontology = "MF", allGenes = clusterList, annot = annFUN.gene2GO, gene2GO = clusterID2go)
+GOdata_BP <- new("topGOdata", ontology = "BP", allGenes = clusterList, annot = annFUN.gene2GO, gene2GO = clusterID2go)
+GOdata_CC <- new("topGOdata", ontology = "CC", allGenes = clusterList, annot = annFUN.gene2GO, gene2GO = clusterID2go)
+
+# Molecular Function
+####################
+resultFis_MF 	<- runTest(GOdata_MF, algorithm = "parentchild", statistic = "fisher")
+table_MF <- GenTable(GOdata_MF, parentChild = resultFis_MF, orderBy = "parentChild", ranksOf = "parentChild", topNodes = 200)
+
+# Biological Process
+####################
+resultFis_BP <- runTest(GOdata_BP, algorithm = "parentchild", statistic = "fisher")
+table_BP <- GenTable(GOdata_BP, parentChild = resultFis_BP, orderBy = "parentChild", ranksOf = "parentChild", topNodes = 200)
+
+
+# Cellular Component
+####################
+resultFis_CC <- runTest(GOdata_CC, algorithm = "parentchild", statistic = "fisher")
+table_CC <- GenTable(GOdata_CC, parentChild = resultFis_CC, orderBy = "parentChild", ranksOf = "parentChild", topNodes = 200)
+
+
+# filter out significant GO terms:
+###################################
+
+MF <- subset(table_MF, parentChild < 0.05)
+BP <- subset(table_BP, parentChild < 0.05)
+CC <- subset(table_CC, parentChild < 0.05)
+
+MF$ontology<-"MF"
+BP$ontology<-"BP"
+CC$ontology<-"CC"
+
+MF
+BP
+CC
+```
+
+```{r}
+boxplot(all[grep("0004984",all$uniqueGOs),"PARGp"],all[grep("0004984",all$uniqueGOs),"AECHp"])
+sum(all[grep("0004984",all$uniqueGOs),"AHEYp"]<0.05,na.rm=T)
+sum(all[grep("0004984",all$uniqueGOs),"ACOLp"]<0.05,na.rm=T)
+```

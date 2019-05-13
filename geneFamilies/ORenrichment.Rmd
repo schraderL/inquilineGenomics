@@ -1,0 +1,85 @@
+---
+title: "CAFE kmeans clustering Run5 analysis"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("topGO", version = "3.8")
+browseVignettes("topGO")
+```
+
+```{r}
+library(topGO)
+library(ALL)
+data(ALL)
+data(geneList)
+```
+[From CAFE's manual]
+Finally you have the results for each gene family, one gene family per line. In our example above, we are showing the first three gene families, identified by their numbers (the first column, ???ID???), 8, 10 and 11. The number that appears after a species name in the tree given under ???Newick??? (e.g., 59 in ???cat 59??? from gene family 8) is the gene count for that species and that gene family. The third column (???Family-wide P-value???) tells us for each gene family whether it has a significantly greater rate of evolution. When this value is < 0.01, then the fourth column (???Viterbi P-value???) allows the identification of which branches the shift in ?? was significant.
+
+```{r}
+cafe<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/RUN4C/RUN4C/m6b.cafe",sep="\t",skip=10)
+
+library(dplyr)
+library(plyr)
+library(tidyr)
+sp<-strsplit(as.character(cafe$X.Viterbi.P.values.),',') %>% do.call(rbind, .) %>% gsub("\\(|\\)","",.,perl=T) 
+sp[sp=="-"]<-NA
+sp<-data.frame(sp)
+for(i in 1:dim(sp)[2]){
+  sp[,i]<-as.numeric(as.character(sp[,i]))
+}
+
+
+pvalOrder<-c(c(0,3),c(2,4),c(1,7),c(6,8),c(5,10) )
+
+nodeIds <- data.frame('node' = c("AHEYp","ACHAp","PARGp","ACHA.PARGp","AHEY.ACHA.PARGp","AECHp","AINSp","AECH.AINSp","ACROp","ACOLp","ROOTp"), 
+                   'id' = c(0,2,4,3,1,6,8,7,5,10,9))
+
+nodeIds<-nodeIds[match(pvalOrder, nodeIds$id),]
+colnames(sp)<-nodeIds$node
+
+c2<-cbind(cafe,sp)
+#subset(c2,ACHA/PARG<0.01 & PARG <0.01 & AINS <0.01)
+
+```
+
+```{r}
+clusters<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/MCLclustering/Acro+Acol/mcl.clean/finalQC.I01.5.tsv",sep="\t")
+head(clusters)
+data<-merge(c2,clusters,by.x="X.ID.",by.y="ClusterID",all.x=T)
+allC<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/MCLclustering/Acro+Acol/mcl/seq.af50lf25.mci.I01.5",sep="\t",F)
+```
+
+```{r}
+subset(data,PARGp<0.05)
+```
+

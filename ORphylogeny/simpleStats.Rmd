@@ -1,0 +1,99 @@
+---
+title: "Inquiline Genomics: GO enrichment analysis of RELAX results"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+# Load Environment
+## Load libraries
+
+```{r}
+######################
+# Load packages
+######################
+library("ape")
+library("Biostrings")
+library("ggplot2")
+library("ggtree")
+library("phytools")
+library("treeman")
+library(diversitree)
+library(phytools)
+library(geiger)
+library(cowplot)
+library(RColorBrewer)
+source("~/sciebo/librarySchrader.R")
+library(gplots)
+library(randomcoloR)
+library(data.table)
+
+```
+
+```{r}
+# load cladesTree object
+load("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/cladesTree.Robject")
+# load tree_dt object
+load("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/tree_dt.Robject")
+tipDF4<-read.table("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/tipsDF4.tsv",T,sep="\t")
+```
+
+# Clade sizes
+```{r}
+tipListSF<-split(tipDF4,f=list(tipDF4$subfamily))
+tipListSF2<-lapply(tipListSF,function(x) split(x,f=x$clade))
+
+subFamClades<-list()
+for (i in names(tipListSF2)){
+  subFamClades[[i]]<-(unlist(lapply(tipListSF2[[i]],function(x) dim(x)[1])))
+}
+
+subFamCladesMedian<-data.frame(do.call(rbind,lapply(subFamClades,median)))
+colnames(subFamCladesMedian)<-"Median Clade Size"
+pdf("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/cladeSizes.pdf",width=6,height=10)
+boxplot(subFamClades,outline=T,col=goodCols[2],las=2,horiz=T,cex=.2,ylab="clade sizes")
+abline(h=11,col=rgb(1,0,0,.4),lty=2,lwd=2)
+dev.off()
+
+cladeSplit<-split(tipDF4,f=as.factor(tipDF4$clade))
+unlist(lapply(cladeSplit,function(x) dim(x)[1]))
+hist(unlist(lapply(cladeSplit,function(x) dim(x)[1])),100)
+
+```
+# How many clades have lost genes in parasites?
+```{r}
+tmp<-(unique(subset(tipDF4,smallerCladesTrait!=0)))
+tmp2<-split(tmp,f=tmp$smallerCladesTrait)
+tmp3<-lapply(tmp2,function(x) unique(x$clade))
+tmp4<-do.call(rbind,lapply(tmp3,length))
+```
+

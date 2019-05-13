@@ -1,0 +1,114 @@
+---
+title: "Inquiline Genomics: dNdS analysis of absREL results"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+### Analys dN/dS rates of inquilines
+```{r}
+all<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/SOS/data/absREL.tsv",sep="\t")
+```
+
+```{r}
+library(ggplot2)
+source("~/sciebo/librarySchrader.R")
+```
+
+```{r}
+head(all)
+```
+
+### Plot results
+```{r}
+
+om<-all[,grep("om$",colnames(all),perl=T)]
+colnames(om)<-gsub(x=colnames(om),"om","")
+
+barplot(c(sum(om$PARG==0),sum(om$ACHA==0),sum(om$P1==0),sum(om$AINS==0),sum(om$AECH==0),sum(om$AHEY==0),sum(om$A2==0),sum(om$A1==0),sum(om$ACOL==0)),names=c("PARG","ACHA","P1","AINS","AECH","AHEY","A2","A1","ACOL"),main="dN/dS==0")
+
+barplot(c(sum(om$PARG==1),sum(om$ACHA==1),sum(om$P1==1),sum(om$AINS==1),sum(om$AECH==1),sum(om$AHEY==1),sum(om$A2==1),sum(om$A1==1),sum(om$ACOL==1)),names=c("PARG","ACHA","P1","AINS","AECH","AHEY","A2","A1","ACOL"),main="dN/dS==1")
+
+boxplot(om,outline=F)
+
+```
+
+
+```{r}
+cutoff<-1000
+set<-subset(om,PARG<cutoff & AHEY<cutoff & P1 <cutoff & AINS<cutoff & ACHA <cutoff & ACOL<cutoff & AECH<cutoff & A1<cutoff & A2<cutoff)
+
+p <- ggplot(stack(set), aes(x=ind, y=values)) + 
+  geom_violin(fill=addalpha(goodCols[2],.3),color=goodCols[2],width=.85,position=position_nudge(x=-.2))  +
+  geom_boxplot(outlier.shape =1 ,outlier.colour = addalpha(goodCols[4],.9), outlier.size = .1,width=.2,fill=addalpha(goodCols[4],.3),position=position_nudge(x=.2)) +
+  theme_classic() + ylim(0,2)
+p
+
+
+```
+
+```{r}
+# choose cutoff based on distribution of dN/dS estimates. Anything above 1000 seems to be artificially assigned.
+plot(c(om$PARG,om$A1,om$ACOL,om$AECH),log="y")
+cutoff<-1e+3
+set<-subset(om,PARG<cutoff & AHEY<cutoff & P1 <cutoff & AINS<cutoff & ACHA <cutoff & ACOL<cutoff & AECH<cutoff & A1<cutoff & A2<cutoff)
+boxplot(set,outline=F)
+
+
+```
+
+
+```{r}
+cutoff<-1e+3
+set<-subset(om,PARG<cutoff & AHEY<cutoff & P1 <cutoff & AINS<cutoff & ACHA <cutoff & ACOL<cutoff & AECH<cutoff & A1<cutoff & A2<cutoff)
+m<-NA
+
+for(i in colnames(set)){
+  m[i]<-median(set[,i],na.rm=T)
+}
+  
+barplot(m,las=2)
+  
+```
+
+```{r}
+print("dN/dS==1 in parasites")
+dim(subset(all,P1om==1 & AINSom==1 & ACHAom ==1 & PARGom ==1))
+print("dN/dS==1 at origins of parasitism")
+dim(subset(all,P1om==1 & AINSom==1))
+print("dN/dS==1 in hosts")
+dim(subset(all,AHEYom==1 & AECHom==1 ))
+print("dN/dS==1 in host origin A1")
+dim(subset(all,A1om==1))
+
+```
+

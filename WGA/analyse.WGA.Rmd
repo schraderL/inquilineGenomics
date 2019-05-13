@@ -35,6 +35,11 @@ for (species in selection){
 }
 
 ```
+
+```{r}
+
+```
+
 ### Retrieve progressive Cactus mutations.tsv
 ```{r}
  muts<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/WGA/results/mutations.attines.tsv",sep=",")
@@ -398,3 +403,79 @@ barplot(all$Inv/all$total,las=2,names=all$species,xlab="freaction of Inversions 
 barplot(all$Tra/all$total,las=2,names=all$species,xlab="freaction of Transpositions by all events")
 
 ```
+```{r}
+relative<-data.frame(row.names = all$species)
+for(i in colnames(all)[2:ncol(all)]){
+  relValues<-((all[,i]/mean(all[,i]))-1)*100
+  relative<-  cbind(relative,relValues)
+  colnames(relative)[ncol(relative)]<-i
+}
+
+bySpecies<-data.frame(t(relative))
+
+
+stackRelative<-stack(relative)
+stackRelative$species<-rep(rownames(relative),length=nrow(stackRelative))
+colnames(stackRelative)<-c("rate","type","branch")
+stackRelative<-subset(stackRelative,type!="total")
+relative
+```
+
+```{r fig.height=4, fig.width=6.5}
+
+# Adjust stack relative
+shift<-30
+stackRelative2$rate<-ifelse(stackRelative$rate<0,stackRelative$rate-shift,stackRelative$rate+shift)
+#gg<-ggplot(stackRelative2, aes(fill=type, y=rate, x=branch))
+    
+#gg+geom_bar(position="dodge", stat="identity") +scale_fill_brewer(palette = "Set1") 
+#gg+geom_bar(position="fill", stat="identity") +scale_fill_manual(values = goodCols)
+#gg+geom_bar(stat="identity") +scale_fill_manual(values = goodCols)
+
+#gg1<-ggplot(stackRelative2, aes(fill=rate, y=rate, x=type))  +geom_bar(position="dodge", stat="identity")  +facet_wrap(~branch,ncol=6) + scale_color_gradient(low=goodCols[1], high=goodCols[5],aesthetics = "fill")# 
+gg1<-ggplot(stackRelative2, aes(fill=rate, y=rate, x=type))+facet_wrap(~branch,ncol=6)
+
+axisTicks<-c(0,100,200,300)
+axisTicksNeg<-c(0,-100)
+gg1<-gg1 + theme(axis.ticks=element_blank(),axis.text=element_blank(),panel.spacing = unit(.5, "lines")) + scale_y_discrete() + 
+      coord_cartesian(clip="off") +
+      scale_x_discrete() + 
+      annotate("segment", x=.4, xend=.4, y=-Inf, yend=Inf,lwd=.1) + # add y axis
+      annotate("segment", x=.4, xend=Inf, y=axisTicks+shift, yend=axisTicks+shift,lwd=.4,lty=3, alpha=.5) +
+      annotate("segment", x=.4, xend=Inf, y=axisTicksNeg-shift, yend=axisTicksNeg-shift,lwd=.4,lty=3, alpha=.5) +
+      annotate("text", x = 0.1, y = axisTicks[2]+shift, label = axisTicks[2],parse=F,size=2.4,angle = 90) +
+      annotate("text", x = 0.1, y = axisTicks[3]+shift, label = axisTicks[3],parse=F,size=2.4,angle = 90) +
+      annotate("text", x = 0.1, y = axisTicks[4]+shift, label = axisTicks[4],parse=F,size=2.4,angle = 90) +
+      annotate("text", x = 0.1, y = axisTicksNeg[2]-shift, label = axisTicksNeg[2],parse=F,size=2.4,angle = 90)
+
+gg1<-gg1   +geom_bar(position="dodge", stat="identity")+   scale_color_gradient(low=goodCols[1], high=goodCols[5],aesthetics = "fill") 
+xpos<-rep(c(1,2,3,4,5),nrow(relative))
+labs<-rep(c("V","P","D","U","I"),nrow(relative))
+
+gg1<-gg1 + annotate("rect", xmin = 0.5, xmax = 5.5, ymin = -shift, ymax = shift,alpha=1,fill="white",color="black")
+gg1<-gg1 + annotate("text", x = 1, y = 0, label = 'bold("V")',parse=T)
+gg1<-gg1 + annotate("text", x = 2, y = 0, label = 'bold("P")',parse=T)
+gg1<-gg1 + annotate("text", x = 3, y = 0, label = 'bold("D")',parse=T)
+gg1<-gg1 + annotate("text", x = 4, y = 0, label = 'bold("U")',parse=T)
+gg1<-gg1 + annotate("text", x = 5, y = 0, label = 'bold("I")',parse=T)
+
+
+# P=Transposition
+# I=Insertion
+# D=Deletion
+# V=Inversion
+# GI(D)=GapInsertion(GapDeletion)
+# U=Duplication
+# DB=Deletion Breakpoint GDB=Gap Deletion Breakpoint
+
+
+
+gg1
+
+
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/WGA/results/mutations.attines.pdf")
+
+```
+```{r}
+```
+

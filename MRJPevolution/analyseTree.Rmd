@@ -1,0 +1,298 @@
+---
+title: "Inquiline Genomics: MRJP gene tree analysis and plot"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+# Load Environment
+## Load libraries
+
+```{r}
+######################
+# Load packages
+######################
+library("ape")
+library("Biostrings")
+library("ggplot2")
+library("ggtree")
+library("phytools")
+library("treeman")
+library(diversitree)
+library(phytools)
+library(geiger)
+library(cowplot)
+library(RColorBrewer)
+source("~/sciebo/librarySchrader.R")
+library(gplots)
+library(randomcoloR)
+library(data.table)
+```
+
+
+```{r}
+############################################
+# Load rerooted RaxML tree
+############################################
+t1<-read.tree("~/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/FigtreeRooted.bipartitions.nwk")
+to<-t1
+#t1<-read.raxml("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/ItolRooted.bipartitions.nwk.txt")
+#ggtree(t1) + geom_tiplab() + geom_label2(aes(label = bootstrap)) + geom_rootpoint()
+#t1@phylo <- root(raxml_tree_rooted@phylo, node = "181")
+```
+
+```{r}
+############################################
+# Rename Amel genes where necessary
+############################################
+old<-c("LOC413379","LOC413380","LOC724293","LOC726274","Mrjp3","Mrjp5","Mrjp6","Mrjp4","Mrjp7","Mrjp1","LOC102654393","Mrjp2","Mrjp8","Mrjp9","Y-e3","LOC727110","Y-y","Y-h","LOC113218568","Y-f")
+new<-c("Y-g1"     ,"Y-g2"     ,"Y-x1"     ,"Y-e1"     ,"Mrjp3","Mrjp5","Mrjp6","Mrjp4","Mrjp7","Mrjp1","Mrjp2-like"  ,"Mrjp2","Mrjp8","Mrjp9","Y-e3","Y-x2"     ,"Y-y","Y-h","Y-like","Y-f")
+for (i in 1:length(old)){
+  t1$tip.label[t1$tip.label==old[i]]<-new[i]
+}
+
+############################################
+# Rename yellow genes in ants according to Amel genes
+############################################
+
+overview<-list()
+for (query in c("Y-h","Y-y","Y-g1","Y-g2","Y-f","Y-e1","Y-x2","Y-e3","Y-like","Y-x1")){
+  t2 <- as(t1, 'TreeMan')
+  sis<-getNdSstr(t2,query)
+  childs<-getNdKids(t2,sis)
+  #gsub(t1$tip.label[t1$tip.label %in% childs])
+  renaming<-gsub(x=childs,pattern = "(....).*",paste("\\1",query,sep="-"),perl=T)
+  renaming[duplicated(renaming)]<-paste(renaming[duplicated(renaming)],"b",sep="")
+  renaming[duplicated(renaming)]<-paste(gsub(".$","",renaming[duplicated(renaming)]),"c",sep="")
+  renaming[duplicated(renaming)]<-paste(gsub(".$","",renaming[duplicated(renaming)]),"d",sep="")
+  t1$tip.label[t1$tip.label %in% childs]<-renaming
+  overview[[query]]<-data.frame(childs,gsub(x=childs,pattern = "(....).*",paste("\\1",query,sep="-"),perl=T))
+  colnames(overview[[query]])<-c("original","new")
+}
+
+#overviewTable<-do.call(rbind,overview)
+############################################
+# Rename MRJP-15 clade to Y-g3
+############################################
+t2 <- as(t1, 'TreeMan')
+nds<-getNdPrids(t2,"Acep-MRJP-16")
+childs<-getNdKids(t2,nds[2])
+t1$tip.label[t1$tip.label %in% childs]<-gsub(x=childs,pattern="(....).*","\\1-Y-g3",perl=T)
+
+
+```
+
+
+```{r}
+t1$tip.label[grep("Aech|Parg|Acha|Ahey|Acol|Acep|Ains",t1$tip.label,invert=T)]<-paste("Amel",t1$tip.label[grep("Aech|Parg|Acha|Ahey|Acol|Acep|Ains",t1$tip.label,invert=T)],sep="-")
+```
+
+```{r}
+#cladesTree<-getCladesofSize(t1,3)
+cladesTree<-getCladesofSize(t1,5)
+# generate overview dataframe
+tipList<-lapply(cladesTree, function(x) x$tip.label)
+names(tipList)<-unlist(lapply(tipList,function(x) gsub(pattern = "^....-",replacement = "",x=x[1],perl=T)))
+
+
+#names(tipList)<-
+tipDF<-stack(tipList)
+
+```
+
+```{r}
+colnames(tipDF)<-c("gene","clade")
+# rename levels
+tipDF$clade<-plyr::revalue(tipDF$clade, c("Mrjp9"="A. mellifera MRJPs", "MRJP-18"="Mrjp01", "MRJP-10"="Mrjp02", "MRJP-03"="Mrjp03", "MRJP-05"="Mrjp04", "MRJP-24"="Mrjp05", "MRJP-06"="Mrjp06", "MRJP-21"="Mrjp07", "MRJP-27"="Mrjp08","MRJP-30"="Mrjp09"))
+```
+
+```{r}
+
+#rename duplicates
+tipDF$gene[duplicated(tipDF$gene)]<-paste(tipDF$gene[duplicated(tipDF$gene)],"b",sep="-")
+tipDF$gene[duplicated(tipDF$gene)]<-paste(tipDF$gene[duplicated(tipDF$gene)],"c",sep="-")
+tipDF$gene[duplicated(tipDF$gene)]
+
+```
+```{r}
+
+#cladeList<-unstack(tipDF[,c("gene","clade")])
+#t1 <- ggtree::groupOTU(t1, cladeList)
+##str(t1)
+#levels(attributes(t1)$group)
+
+
+```
+
+```{r}
+cladeSizes<-lapply(tipList, length)
+cladeSizesTab<-do.call(rbind,cladeSizes)
+plot(cladeSizesTab,cex=.8,pch=19,col=addalpha(goodCols[1],.8))
+abline(h=8,col="red",lwd=2,lty=2)
+cladeSummary<-lapply(tipList, function(x) summary(as.factor(substr(x,1,4))))
+cladeTable<-plyr::ldply(cladeSummary, rbind)
+cladeTable[is.na(cladeTable)] <- 0
+
+
+```
+
+```{r}
+cladeMatrixLC<-cladeTable[,c("Aech","Ains","Parg","Ahey","Acha","Acol","Acep","Amel")]
+color.palette  <- colorRampPalette(c("gray90","blue"))(n=10)
+heatmap.2(as.matrix(cladeMatrixLC), col = color.palette)
+```
+
+```{r}
+# generate color vector
+n <- length(levels(tipDF$clade))
+qual_col_pals <- brewer.pal.info[brewer.pal.info$category == 'qual',]
+colVec1 <- unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))[1:n]
+
+```
+
+```{r fig.height=12}
+
+circ <- ggtree(t1,size=.2, layout = "circular",ladderize = T,right = T) 
+
+row.names(tipDF)<-tipDF$gene
+tipDF$species<-substr(tipDF$gene,1,4)
+tipDF$species_type<-"Attine"
+tipDF$species_type[grep("Parg",tipDF$species)]<-"Parg"
+tipDF$species_type[grep("Acha",tipDF$species)]<-"Acha"
+tipDF$species_type[grep("Ains",tipDF$species)]<-"Ains"
+tipDF$species_type[grep("Amel",tipDF$species)]<-"Amel"
+circ <- circ %<+% tipDF
+tree_dt <- data.table(circ$data)
+# select only the tip labels and order by coord y
+circ$data$species<-as.factor(circ$data$species)
+circ$data$species_type<-as.factor(circ$data$species_type)
+tree_dt <- tree_dt[isTip == TRUE][order(y)]
+
+
+# Make table with y cords for each group in consecutive order; 
+# this helps for drawing & labeling segments.
+# Note the usage of "rleid" function, which is a grouping ID generator,
+# needed because consecutive rows of an identical reoccurring group must form a unique group.
+coord_groups <- tree_dt[, .(x = max(x),
+                            y1 = y[1],
+                            y2 = y[.N],
+                            angle = mean(angle),
+                            n = .N), # optional - helps with counting
+                        by = .(clade, 
+                               id_gr = rleid(clade, 
+                                             prefix = "cld"))]
+coord_groups
+
+
+# Compute the middle y - will be used for placing the group label;
+# similarly the mean angle was computed above already. 
+coord_groups[, y_mid := rowMeans(.SD), .SDcols = c("y1", "y2")]
+
+# For one-record groups where y1=y2, adjust their y coordinates so that a segment gets drawn;
+# If not, no segment get drawn for such cases.
+# To force a segment add and subtract a small amount (try & error until seems ok). 
+# Prefer a smaller values since with bigger ones you risk to exaggerate the segments.
+coord_groups[, y1_adj := ifelse(y1 == y2, y1 - 0.1, y1)]
+coord_groups[, y2_adj := ifelse(y1 == y2, y2 + 0.1, y2)]
+
+# Labels need angle adjustment for cases between 90 and 270 dg
+coord_groups[, angle_adj := ifelse(angle %between% c(90, 180), 
+                                   yes = angle + 180,
+                                   no = ifelse(angle > 180 & angle <= 270,
+                                               yes = angle - 180,
+                                               no = angle))]
+
+# Labels with angles between 90 and 270 dg
+# need change of horizontal adjustment argument from 0 to 1.
+coord_groups[, hjust_adj := ifelse(angle %between% c(90, 270), yes = 1L, no = 0L)]
+
+# if needed, coloring could be binary 
+coord_groups[, col := ifelse(.I%%2, 0.35, 1)]
+coord_groups
+
+
+# Define variable to control x coordinate of segments & labels
+my_x <- coord_groups$x + 0.6
+
+tree_labeled <- 
+  circ + 
+  geom_tiplab(size=1,aes(angle=angle,color=species_type)) + 
+  # Add line segments for each group.
+  geom_segment(data = coord_groups,
+               aes(x = my_x, 
+                   y = y1_adj, 
+                   xend = my_x, 
+                   yend = y2_adj),
+               color = rgb(.5,.5,.5,.5),
+               lineend = "butt",
+               size = 1.2) +
+  # Add text group labels at the middle of each segment.
+  geom_text(data = coord_groups,
+            aes(x = my_x+0.02,
+                y = y_mid,
+                angle = angle_adj,
+                hjust = hjust_adj,
+                label = clade),
+            vjust = 0.5, 
+            size  = 3,
+            nudge_x = 0.05, # Offsetting label from its default x coordinate.
+            color = "black")
+```
+
+```{r}
+#tree_labeled+ theme(legend.position="right")+theme(legend.key.size = unit(.1,"line"))
+tree_labeled+ theme(legend.position="right")+guides(color = guide_legend(override.aes = list(size=5))) 
+
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/Ants.MRJP-yellow.ggtree.pdf",width=7,height=7)
+
+
+```
+
+```{r}
+tree_list<-split(tree_dt,f=tree_dt$clade)
+tree_list2<-lapply(tree_list, function(x) summary(as.factor(substr(x$label,1,4))))
+treeTable<-plyr::ldply(tree_list2, rbind)
+treeTable[is.na(treeTable)]<-0
+colnames(treeTable)[1]<-"clade"
+
+write.table(treeTable[order(treeTable$clade),],"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/Ants.MRJP-yellow.cladeTable.tsv",sep="\t",quote=F,row.names=F)
+```
+
+```{r}
+conversion<-data.frame(cbind(t1$tip.label,to$tip.label))
+treeTable<-merge(tree_dt,conversion,by.x="label",by.y="X1")
+treeT2<-(treeTable[,c(1,2,3,4,5,11,12,13,14)])
+colnames(treeT2)[length(colnames(treeT2))]<-"originalID"
+write.table(treeT2,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/Ants.MRJP-yellow.overview.tsv",sep="\t",quote=F,row.names=F)
+
+```
+

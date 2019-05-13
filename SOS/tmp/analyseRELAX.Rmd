@@ -1,0 +1,225 @@
+---
+title: "Inquiline Genomics: analysis and summary of RELAX"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+# Introduction
+We tested for relaxed selection in any social parasite branch.
+
+# Input data 
+### Load environment
+```{r}
+#install.packages("rjson")
+library("rjson")
+library(plyr)
+library(tidyr)
+library(ggplot2)
+```
+
+### Locate data
+```{r}
+# All parasite branches vs all non-parasite branches
+folder<-"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/results/"
+# All parasite branches vs hosts & internal Acromyrmex branches (A1 & A2)
+folder<-"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/results2/"
+
+files<-dir(folder,pattern =".json")
+```
+
+### Retrieve branch wide dN/dS estimates for all SCOs
+```{r}
+
+pval<-NA
+k<-NA
+dNref<-NA
+dNtest<-NA
+OGs<-NA
+results<-list()
+
+branchNames<-list()
+# loop over json file from each SCO and retrieve data. Store data in data frames 
+for (q in 1:length(files)){
+  OG<-gsub(pattern="(OG[0-9]{7})\\..*","\\1",perl=T,x=files[q])
+  OGs[q]<-OG
+  result <- fromJSON(file = paste(folder,files[q],sep=""))
+  results[[q]]<-result
+  pval[q]<- result$`test results`$`p-value`
+  k[q]<-    result$`test results`$`relaxation or intensification parameter`
+  dNref[q]<-result$fits$`MG94xREV with separate rates for branch sets`$`Rate Distributions`[[1]][[1]][1]
+  dNtest[q]<-result$fits$`MG94xREV with separate rates for branch sets`$`Rate Distributions`[[2]][[1]][1]
+  branchNames[[q]]<-names(result$`branch attributes`$`0`)
+}  
+
+#result$fits$`RELAX null`$`Rate Distributions`$Test
+#result$fits$`RELAX null`$`Rate Distributions`$Reference
+# branch names
+#bn <- data.frame(do.call("rbind", branchNames))
+```
+
+```{r}
+bla<-NA
+for (q in 1:5){
+#  bla[q]<-length(results[[q]]$fits$`RELAX null`$`Rate Distributions`$Test)
+}
+
+To1<-NA
+To2<-NA
+To3<-NA
+Tp1<-NA
+Tp2<-NA
+Tp3<-NA
+Ro1<-NA
+Ro2<-NA
+Ro3<-NA
+Rp1<-NA
+Rp2<-NA
+Rp3<-NA
+
+for (q in 1:length(results)){
+  To1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[1]]$omega
+  To2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[2]]$omega
+  To3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[3]]$omega
+  Tp1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[1]]$proportion
+  Tp2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[2]]$proportion
+  Tp3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[3]]$proportion
+  Ro1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[1]]$omega
+  Ro2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[2]]$omega
+  Ro3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[3]]$omega
+  Rp1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[1]]$proportion
+  Rp2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[2]]$proportion
+  Rp3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[3]]$proportion
+}
+```
+
+```{r}
+boxplot(log(To1,2),log(To2,2),log(To3,2),log(Ro1,2),log(Ro2,2),log(Ro3,2),outline=F)
+boxplot(To1,To2,To3,Ro1,Ro2,Ro3,outline=F)
+
+plot(To1,Ro1,cex=.2,col=rgb(.2,.5,1,.8),xlim=c(0,1.5),ylim=c(0,1.5))
+points(To2,Ro2,cex=.2,col=rgb(1,.5,.2,.3))
+points(To3,Ro3,cex=.2,col=rgb(.1,1,.2,1))
+plot(To2,Ro2)
+boxplot(To1,Ro1,outline=F,main=c("omega1: Test vs Ref"))
+boxplot(To2,Ro2,outline=F,main=c("omega2: Test vs Ref"))
+boxplot(To3,Ro3,outline=F,main=c("omega3: Test vs Ref"))
+hist(To1,ylim=c(0,6000))
+hist(Ro1,ylim=c(0,6000))
+```
+```{r}
+# calculate minimal omega values
+To<-data.frame(cbind(To1,To2,To3))
+Ro<-data.frame(cbind(Ro1,Ro2,Ro3))
+Tp<-data.frame(cbind(Tp1,Tp2,Tp3))
+Rp<-data.frame(cbind(Rp1,Rp2,Rp3))
+rData<-data.frame(cbind(To,Tp,Ro,Rp))
+
+ToMIN<-apply(To, 1, FUN=min)
+RoMIN<-apply(Ro, 1, FUN=min)
+RoO<-data.frame(t(apply(Ro, 1, FUN=sort)))
+ToO<-data.frame(t(apply(To, 1, FUN=sort)))
+
+omega<-cbind(RoO,ToO)
+colnames(omega)[4:6]<-c("To1","To2","To3")
+proportions<-cbind(Rp,Tp)
+colnames(omega)[4:6]<-c("To1","To2","To3")
+
+
+
+head(cbind(To1,Tp1))
+head(cbind(To2,Tp2))
+head(cbind(To3,Tp3))
+
+ToMean<-rowMeans(cbind(To1,To2))
+RoMean<-rowMeans(cbind(Ro1,Ro2))
+
+
+```
+
+
+```{r}
+boxplot(ToMean,RoMean,outline=F)
+boxplot((Tp1+Tp2),(Rp1+Rp2),outline=F)
+m <- ggplot(omega, aes(x = ToMean, y = (Tp1+Tp2))) +
+ geom_point(alpha=.1,cex=.1) 
+m + geom_density_2d() + ylim(0.99,1)
+
+m2 <- ggplot(omega, aes(x = RoMean, y = (Rp1+Rp2))) +
+ geom_point(alpha=.1,cex=.1) 
+m2 + geom_density_2d() + ylim(0.99,1)
+
+```
+
+### Load absREL results
+```{r}
+allABSREL<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/SOS/data/absREL.tsv",sep="\t")
+```
+
+```{r}
+library(plyr)
+
+allRELAX<-data.frame(cbind(OGs,pval) %>%cbind(.,k) %>% cbind(.,dNref) %>% cbind(.,dNtest),stringsAsFactors = F)
+allRELAX$pval<-as.numeric(allRELAX$pval)
+allRELAX$k<-as.numeric(allRELAX$k)
+allRELAX$dNref<-as.numeric(allRELAX$dNref)
+allRELAX$dNtest<-as.numeric(allRELAX$dNtest)
+plot(allRELAX$dNtest,allRELAX$dNref,xlim=c(0,35),ylim=c(0,4))  
+allRELAX<-cbind(allRELAX,rData)
+```
+
+```{r}
+all<-merge(allABSREL,allRELAX,by.x="OGid",by.y="OGs")
+```
+
+
+```{r}
+dim(subset(all,p.adjust(pval,"fdr")<0.05 & k>1))
+dim(subset(all,p.adjust(pval,"fdr")<0.05 & k<1))
+
+```
+
+
+```{r}
+
+sig<-all$pval<0.05
+m3 <- ggplot(all, aes(x = To1, y = AECHom,colour = sig)) + geom_point(alpha=.1,cex=.1) 
+m3 + geom_density_2d() + ylim(0,2) + xlim(0,2)
+
+
+m4 <- ggplot(all, aes(x = Ro1, y = AINSom,colour = sig)) + geom_point(alpha=.1,cex=.1) 
+m4 + geom_density_2d() + ylim(0,2) + xlim(0,2)
+
+m5 <- ggplot(all, aes(x = log(k,2), y = rowMeans(cbind(To1,To2)),colour = sig)) + geom_point(alpha=.1,cex=.1) 
+m5 + geom_density_2d() + ylim(0,1) + xlim(-5,5) + theme_light()
+
+```

@@ -1,0 +1,274 @@
+---
+title: "Inquiline Genomics: analysis and summary of RELAX"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+# Input data 
+### Load environment
+```{r}
+#install.packages("rjson")
+library("rjson")
+library(plyr)
+library(tidyr)
+```
+
+### Locate data
+```{r}
+## All parasite branches vs all non-parasite branches
+folder<-"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/results/"
+## All parasite branches vs hosts & internal Acromyrmex branches (A1 & A2)
+#folder<-"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/results2/"
+
+files<-dir(folder,pattern =".json")
+```
+
+### Retrieve branch wide dN/dS estimates for all SCOs
+
+```{r}
+
+pval<-NA
+k<-NA
+dNref<-NA
+dNtest<-NA
+OGid<-NA
+results<-list()
+
+branchNames<-list()
+# loop over json file from each SCO and retrieve data. Store data in data frames 
+for (q in 1:length(files)){
+  OG<-gsub(pattern="(OG[0-9]{7})\\..*","\\1",perl=T,x=files[q])
+  OGid[q]<-OG
+  result <- fromJSON(file = paste(folder,files[q],sep=""))
+  results[[q]]<-result
+  pval[q]<- result$`test results`$`p-value`
+  k[q]<-    result$`test results`$`relaxation or intensification parameter`
+  dNref[q]<-result$fits$`MG94xREV with separate rates for branch sets`$`Rate Distributions`[[1]][[1]][1]
+  dNtest[q]<-result$fits$`MG94xREV with separate rates for branch sets`$`Rate Distributions`[[2]][[1]][1]
+  branchNames[[q]]<-sort(names(result$`branch attributes`$`0`))
+}  
+
+#result$fits$`RELAX null`$`Rate Distributions`$Test
+#result$fits$`RELAX null`$`Rate Distributions`$Reference
+# branch names
+#bn <- data.frame(do.call("rbind", branchNames))
+```
+
+```{r}
+
+To1<-NA
+To2<-NA
+To3<-NA
+Tp1<-NA
+Tp2<-NA
+Tp3<-NA
+Ro1<-NA
+Ro2<-NA
+Ro3<-NA
+Rp1<-NA
+Rp2<-NA
+Rp3<-NA
+
+for (q in 1:length(results)){
+  To1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[1]]$omega
+  To2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[2]]$omega
+  To3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[3]]$omega
+  Tp1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[1]]$proportion
+  Tp2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[2]]$proportion
+  Tp3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[3]]$proportion
+  Ro1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[1]]$omega
+  Ro2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[2]]$omega
+  Ro3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[3]]$omega
+  Rp1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[1]]$proportion
+  Rp2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[2]]$proportion
+  Rp3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[3]]$proportion
+}
+```
+
+```{r}
+# calculate minimal omega values
+To<-data.frame(cbind(To1,To2,To3))
+Ro<-data.frame(cbind(Ro1,Ro2,Ro3))
+Tp<-data.frame(cbind(Tp1,Tp2,Tp3))
+Rp<-data.frame(cbind(Rp1,Rp2,Rp3))
+
+
+for(i in 1:length(To)){
+  reorderingTo<-order(To[i,1:3],decreasing=F)
+  reorderingRo<-order(Ro[i,1:3],decreasing=F)
+  To[1,1:3]<-To[1,reorderingTo]
+  Tp[1,1:3]<-Tp[1,reorderingTo]
+  Ro[1,1:3]<-Ro[1,reorderingRo]
+  Rp[1,1:3]<-Rp[1,reorderingRo]
+  if(reorderingRo[1] != 1){
+    print(reorderingRo)
+  }
+  if(reorderingTo[1] != 1){
+    print(reorderingTo)
+  }
+}
+
+
+ToMean<-(Tp1*To1)+(Tp2*To2)
+RoMean<-(Rp1*Ro1)+(Rp2*Ro2)
+rData<-data.frame(cbind(To,Tp,Ro,Rp,ToMean,RoMean))
+
+```
+
+### Create dataframes
+```{R}
+## branch names
+bn <- data.frame(do.call("rbind", branchNames))
+colnames(bn)<-substr(branchNames[[1]],1,4)
+## pvalues
+#pval
+## dNref
+#dNref
+## dNtest
+#dNtest
+
+### create one big data frame
+colnames(bn)<-paste(colnames(bn),"bn",sep="")
+
+allRELAX<-data.frame(cbind(OGid,bn) %>% cbind(.,dNref) %>% cbind(.,dNtest) %>% cbind(.,k) %>% cbind(.,pval) %>% cbind(.,rData),stringsAsFactors = F)
+head(allRELAX)
+
+```
+
+### Plot results
+```{r}
+#boxplot(log(allRELAX$k,2),outline=F)
+#boxplot(allRELAX$RoMean,allRELAX$ToMean,outline=F)
+#boxplot(allRELAX$Ro1,allRELAX$To1,allRELAX$Ro2,allRELAX$To2,allRELAX$Ro3,allRELAX$To3,outline=F)
+#boxplot(log(allRELAX$Ro1,2),log(allRELAX$To1,2),log(allRELAX$Ro2,2),log(allRELAX$To2,2),log(allRELAX$Ro3,2),log(allRELAX$To3,2),outline=F)
+#plot(log(allRELAX$To1/allRELAX$Ro1,2))
+```
+
+### Load GO annotations
+```{r}
+# load GO annotations
+goFiles<-list.files(path="/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/data/", pattern="^gene2GO.*tsv$", all.files=T, full.names=T)
+
+goAnns<-list()
+i<-1
+for (i in 1:length(goFiles)){
+  goAnns[[i]]<-read.csv(goFiles[i], sep="\t",F)
+}
+
+names(goAnns)<-gsub(x=goFiles,pattern=".*\\.(.*).tsv","\\1",perl=T)
+rGoAnns<-do.call(rbind, goAnns)
+
+```
+
+
+### retrieve GO annotations for each OG
+```{r}
+tmp<-allRELAX
+# loop over GO annotations for  "Acromyrmex_charruanus","Acromyrmex_heyeri", "Acromyrmex_insinuator", "Atta_colombica", "Pseudoatta_argentina" 
+for (i in names(goAnns)[c(1,2,3,5,7)]){
+  abbr<-gsub(x=i,pattern="(.).*_(...).*","\\U\\1\\U\\2",perl=T)
+  tmp<-merge(tmp,goAnns[[i]],by.x=paste(abbr,"bn",sep=""),by.y="V1",all.x=T)
+  colnames(tmp)[length(colnames(tmp))]<-paste(abbr,"go",sep="")
+}
+GOtmp<-tmp
+```
+
+```{r}
+GOtmp$GO<-NA
+for (i in 1:dim(tmp)[1]){
+  GOtmp$GO[i]<-paste(unique(c(as.character(tmp$AINSgo[i]),as.character(tmp$AHEYgo[i]))),collapse=", ")
+}
+
+```
+
+
+### add swissprot names
+```{r}
+swiss1<-read.csv("~/sciebo/inquilineGenomics18/inquilines_v2.1/Acromyrmex_insinuator.2.1/annotation/function_annotation/Acromyrmex_insinuator.v2.1.pep.fa.blast.swissprot.best",sep="\t")
+swiss2<-read.csv("~/sciebo/inquilineGenomics18/inquilines_v2.1/Acromyrmex_heyeri.2.1/annotation/function_annotation/Acromyrmex_heyeri.v2.1.pep.fa.blast.swissprot.best",sep="\t")
+tmp<-allRELAX
+tmp<-merge(tmp,swiss1,by.x="AINSbn",by.y="Query_id",all.x=T)
+colnames(tmp)[colnames(tmp)=="Subject_annotation"]<-"sAINS"
+tmp<-merge(tmp,swiss2,by.x="AHEYbn",by.y="Query_id",all.x=T)
+colnames(tmp)[colnames(tmp)=="Subject_annotation"]<-"sAHEY"
+AINSswissprot<-gsub(x=tmp$sAINS,pattern=" OS.*","",perl=T)
+SWtmp<-tmp
+```
+
+
+### add interpro annotations
+```{r}
+ipr1<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/inquilines_v2.1/Acromyrmex_insinuator.2.1/annotation/function_annotation/Acromyrmex_insinuator.v2.1.pep.fa.iprscan.gene.ipr",sep="\t",F,stringsAsFactors = F)
+tmp3<-unite(ipr1,"IPR",colnames(ipr1)[3:dim(ipr1)[2]],sep="|")
+tmp<-allRELAX
+tmp<-merge(tmp,tmp3,by.x="AINSbn",by.y="V1",all.x=T)
+
+tmp$IPR<-gsub(x=tmp$IPR,pattern="\\|\\|+","",perl=T)
+IPRtmp<-tmp
+```
+
+### add kegg annotations
+```{r}
+kegg1<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/inquilines_v2.1/Acromyrmex_insinuator.2.1/annotation/function_annotation/Acromyrmex_insinuator.v2.1.pep.fa.KEGG.K",sep="\t",T,stringsAsFactors = F,skip=2)
+#tmp4<-strsplit(kegg1$ko_id.rank.evalue.score.identity.ko_definition,"\\|")
+#tmp5<-do.call(rbind, tmp4)
+tmp<-allRELAX
+tmp<-merge(tmp,kegg1,by.x="AINSbn",by.y="X..query",all.x=T)
+kegg<-tmp$ko_id.rank.evalue.score.identity.ko_definition
+keggtmp<-tmp
+
+```
+
+### create large data frame
+```{r}
+finalize<-allRELAX
+allRELAX<-merge(allRELAX,GOtmp[,c("GO","OGid")],all.x=T,all.y=F,by="OGid")
+#colnames(allRELAX)[colnames(allRELAX)=="GO.y"]<-"GO"
+allRELAX<-merge(allRELAX,SWtmp[,c("OGid","sAINS")],all.x=T,all.y=F,by="OGid")
+
+allRELAX<-merge(allRELAX,IPRtmp[,c("OGid","IPR")],all.x=T,all.y=F,by="OGid")
+
+allRELAX<-merge(allRELAX,keggtmp[,c("OGid","ko_id.rank.evalue.score.identity.ko_definition")],all.x=T,all.y=F,by="OGid")
+colnames(allRELAX)[colnames(allRELAX)=="ko_id.rank.evalue.score.identity.ko_definition"]<-"kegg"
+head(allRELAX)
+
+
+```
+
+### write to file
+```{r}
+#write.table(allRELAX,"/Users/lukas/sciebo/inquilineGenomics18/SOS/data/RELAX.tsv", sep = "\t",quote = F, row.names=F)
+#write.table(allRELAX,"/Users/lukas/sciebo/inquilineGenomics18/SOS/data/RELAX2.tsv", sep = "\t",quote = F, row.names=F)
+```
+
+

@@ -10,7 +10,7 @@ output:
 library(gplots)
 library("RColorBrewer")
 source("~/sciebo/librarySchrader.R")
-
+library(coin)
 ```
 
 ### Load the data from iadhore output.
@@ -54,7 +54,7 @@ for (i in 1:length(segSplit)){
   
   # find matches between M1 Parg gene and Ahey gene
   Genes1tmp<-subset(Genes,list==scf1 & genome == species1)
-  Genes2tmp<-subset(Genes,list== scf2 & genome == species2)
+  Genes2tmp<-subset(Genes,list==scf2 & genome == species2)
   # retrieve coordinate of first gene from species 1 for a given multiplicon
   firstC1<-subset(Genes1tmp,id==as.character(segSplit[[i]]$first[1]),coordinate)
   # retrieve coordinate of first gene from species 2 for a given multiplicon
@@ -68,11 +68,10 @@ for (i in 1:length(segSplit)){
   Genes2<-subset(Genes2tmp,coordinate<=as.numeric(lastC2) &coordinate>=as.numeric(firstC2)  )
   colnames(MP.subset)[1]<-"idM"
   a<-merge(Genes1,MP.subset,by.x="id",by.y="X",all.x=T)
-  #a<-subset(a, id=="AHEY06765")
+
   a<-unique(a, by=id)
   a<-a[!(duplicated(a$id)),]
   b<-merge(Genes2,MP.subset,by.x="id",by.y="gene_x", all.x=T)
-  #b<-subset(b,gene_x=="PARG07394|PARG07411")
   b<-b[!(duplicated(b$id)),]
   colnames(a)[1]<-"idA"
   colnames(b)[1]<-"idB"
@@ -86,6 +85,20 @@ for (i in 1:length(segSplit)){
   names(f)[i]<-paste(species1,species2,sep="-")
 }
 
+```
+### A plot to explain the logic behind using Kendall's correlation
+```{r}
+
+par(mfrow=c(1,2))
+c1<-cor.test(c(1:10),c(1:10),method="kendall")
+c2<-cor.test(c(1:10),c(1:5,7:11),method="kendall")
+
+plot(c(1:10),c(1:10),cex.axis=.7)
+mtext(paste("Kendall's cor.=",c1$estimate,sep=""),3)
+plot(c(1:10),c(1:5,9:13),cex.axis=.7)
+mtext(paste("Kendall's cor.=",c2$estimate,sep=""),3)
+
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/synteny/results/explanationPlots.pdf",width=5,height=3)
 ```
 
 ### calculate Kendall's rank correlation coefficient for each syntenic region across all genomes.
@@ -105,7 +118,7 @@ for (i in 1:length(f)){
 }
 
 names(kcor)<-names(f)
-
+kcorAll<-kcor
 ```
 
 **Remove all entries from syntenic regions that contain less than 25 syntenic genes**
@@ -115,9 +128,80 @@ names(kcor)<-names(f)
 for (i in 1:length(f)){
   if(sum(f[[i]][,5]==as.character(f[[i]][,9]),na.rm=T)<25){kcor[i]<-NA}
 }
-save(kcor,file="/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2.correlations.Rdata")
+#save(kcor,file="/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2.correlations.Rdata")
 ```
 
+```{r}
+#total number of syntenic regions
+length(kcor)
+# Number of syntenic regions containing more than 25 genes 
+sum(!is.na(kcor))
+
+dimsAll<-unlist(lapply(f,nrow))
+summary(lm(kcorAll~dimsAll))
+
+fSet<-f[which(!is.na(kcor))]
+dims<-unlist(lapply(fSet,nrow))
+summary(lm(kcor[!is.na(kcor)]~dims))
+boxplot(dims[grep("PARG-ACOL|ACOL-PARG",names(dims),perl=T)],dims[grep("AHEY-ACOL|ACOL-AHEY",names(dims),perl=T)],dims[grep("AECH-ACOL|ACOL-AECH",names(dims),perl=T)],dims[grep("AINS-ACOL|ACOL-AINS",names(dims),perl=T)],dims[grep("ACHA-ACOL|ACOL-ACHA",names(dims),perl=T)],outline=T)
+
+length(dims[grep("ACOL-AHEY|AHEY-ACOL",names(dims),perl=T)])
+length(dims[grep("ACOL-AECH|AECH-ACOL",names(dims),perl=T)])
+length(dims[grep("ACOL-PARG|PARG-ACOL",names(dims),perl=T)])
+length(dims[grep("ACOL-ACHA|ACHA-ACOL",names(dims),perl=T)])
+length(dims[grep("ACOL-AINS|AINS-ACOL",names(dims),perl=T)])
+
+
+```
+
+```{r}
+library(ggplot2)
+require(reshape2)
+```
+
+
+```{r}
+sl<-which(kcor<0.95 & !is.na(kcor))
+fS<-f[sl]
+
+ACOLcor<-levels(as.factor(grep("-ACOL",names(kcor),value=T)))
+ACOLcor<-grep("ACOL-ACOL",ACOLcor,invert = T,value=T)
+
+
+```
+
+```{r}
+
+
+
+par(mfrow=c(3,4))
+par(mai=c(.6,.6,.1,.1))
+par(mgp=c(0,.55,0))
+
+for(i in which(names(fS) %in% ACOLcor)){
+  plot(fS[[i]]$C1,fS[[i]]$C2,xaxt="n",yaxt="n",cex=.2,xlab="",ylab="",col=ifelse(fS[[i]]$St1==fS[[i]]$St2,"blue","orange"))
+  mtext(paste(substr(fS[[i]]$G1[1],1,4)," ",fS[[i]]$S1[1],sep=""),1,cex=.5)
+  mtext(paste(substr(fS[[i]]$G2[1],1,4)," ",fS[[i]]$S2[1],sep=""),2,cex=.5)
+  mtext(paste("Kendall's cor.: ", round(kcor[sl[i]],4),sep=""),3,cex=.5)
+  # add axes
+  xlims<-c(min(fS[[i]]$C1,na.rm=T),max(fS[[i]]$C1,na.rm=T))
+  xlabs<-unique(c(as.character(unlist(subset(fS[[i]],C1 == xlims[1],G1))),as.character(unlist(subset(fS[[i]],C1 == xlims[2],G1)))))
+  
+  ylims<-c(min(fS[[i]]$C2,na.rm=T),max(fS[[i]]$C2,na.rm=T))
+  ylabs<-unique(c(as.character(unlist(subset(fS[[i]],C2 == ylims[1],G2))),as.character(unlist(subset(fS[[i]],C2 == ylims[2],G2)))))
+  
+  axis(1,at=xlims,labels=xlabs,cex.axis=.8,las=2)
+  axis(2,at=ylims,labels=ylabs,cex.axis =.8,las=2)
+  #points(xlims,ylims,type="l",lty=2,col="red")
+  #points(xlims,c(ylims[2],ylims[1]),type="l",lty=2,col="red")
+  if(which(fS[[i]]$C2==min(fS[[i]]$C2,na.rm=T))<which(fS[[i]]$C2==max(fS[[i]]$C2,na.rm=T))){
+    segments(x0=xlims[1],x1=xlims[2],y0=ylims[1],y1=ylims[2],col="gray80",lty=2)
+  }else{
+    segments(x0=xlims[1],x1=xlims[2],y0=ylims[2],y1=ylims[1],col="gray80",lty=2)
+  }
+}
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/synteny/results/examplePlots.pdf",width=7,height=5)
+```
 
 
 ```{r}
@@ -158,7 +242,7 @@ heatmap.2(m2,dendrogram='none', Rowv=FALSE, Colv=FALSE,trace='none',col=rev(brew
 heatmap.2(m3,trace='none',col=brewer.pal(9,"YlGnBu"),dendrogram='none', Rowv=FALSE, Colv=FALSE)
 
 ```
-```{r fig.height=3, fig.width=2}
+```{r fig.height=4, fig.width=3}
 AcolComparison<-as.data.frame(cbind(unlist(ksets[["ACOL"]])))
 AcolComparison$V2<-as.factor(substr(x = rownames(AcolComparison),1,4))
 colnames(AcolComparison)<-c("Kendall","species")
@@ -176,21 +260,59 @@ segments(y0=1.001,y1=1.001,x0=2.75,x1=5.25,lwd=1.5)
 segments(y0=1.001,y1=1.004,x0=4,x1=4,lwd=1.5)
 segments(y0=1.001,y1=1.004,x0=1.5,x1=1.5,lwd=1.5)
 segments(y0=1.004,y1=1.004,x0=1.5,x1=4,lwd=1.5)
-willy<-wilcox.test(c(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AHEY"]]),c(ksets[["ACOL"]][["AINS"]],ksets[["ACOL"]][["ACHA"]],ksets[["ACOL"]][["PARG"]]))
+#willy<-wilcox_test(c(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AHEY"]]),c(ksets[["ACOL"]][["AINS"]],ksets[["ACOL"]][["ACHA"]],ksets[["ACOL"]][["PARG"]]))
 
-text(paste("p <",round(willy$p.value,3)),y=1.005,x=2.75,font=2)
 
-dev.print(pdf,        # copies the plot to a the PDF file
-          "/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2/synteny.pdf")
+val1<-c(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AHEY"]])
+val2<-c(ksets[["ACOL"]][["AINS"]],ksets[["ACOL"]][["ACHA"]],ksets[["ACOL"]][["PARG"]])
+f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+wt<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 1000000),alternative="greater")
+pt<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median)
+#text(paste("p <",round(pt$p.value,3)),y=1.005,x=2.75,font=2)
+text(paste("p <",round(pvalue(wt)[1],3)),y=1.005,x=2.75,font=2)
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2/synteny.pdf",width=4,height=6)
 
 
 ```
 ```{r}
-wilcox.test(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AHEY"]])
-wilcox.test(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AINS"]])
-wilcox.test(ksets[["ACOL"]][["AHEY"]],ksets[["ACOL"]][["ACHA"]])
-wilcox.test(ksets[["ACOL"]][["AHEY"]],ksets[["ACOL"]][["PARG"]])
-wilcox.test(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["ACHA"]])
+
+wts<-list()
+pts<-list()
+val1<-ksets[["ACOL"]][["AECH"]]
+val2<-ksets[["ACOL"]][["AHEY"]]
+f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+#wts[["AECH-AHEY"]]<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 10000),alternative="greater")
+pts[["AECH-AHEY"]]<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median,alternative="greater")
+
+#wilcox.test(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AHEY"]])
+
+val1<-ksets[["ACOL"]][["AECH"]]
+val2<-ksets[["ACOL"]][["AINS"]]
+f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+#wts[["AECH-AINS"]]<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 10000),alternative="greater")
+pts[["AECH-AINS"]]<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median,alternative="greater")
+#wilcox.test(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AINS"]])
+
+val1<-ksets[["ACOL"]][["AHEY"]]
+val2<-ksets[["ACOL"]][["ACHA"]]
+f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+#wts[['AHEY-ACHA']]<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 10000),alternative="greater")
+pts[['AHEY-ACHA']]<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median,alternative="greater")
+#wilcox.test(ksets[["ACOL"]][["AHEY"]],ksets[["ACOL"]][["ACHA"]])
+
+val1<-ksets[["ACOL"]][["AHEY"]]
+val2<-ksets[["ACOL"]][["PARG"]]
+f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+#wts[["AHEY-PARG"]]<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 10000),alternative="greater")
+pts[["AHEY-PARG"]]<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median,alternative="greater")
+#wilcox.test(ksets[["ACOL"]][["AHEY"]],ksets[["ACOL"]][["PARG"]])
+
+val1<-ksets[["ACOL"]][["AECH"]]
+val2<-ksets[["ACOL"]][["ACHA"]]
+f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+#wts[["AECH-ACHA"]]<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 10000),alternative="greater")
+pts[["AECH-ACHA"]]<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median,,alternative="greater")
+#wilcox.test(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["ACHA"]])
 
 ```
 

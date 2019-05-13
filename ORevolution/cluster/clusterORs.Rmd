@@ -1,0 +1,44 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+library(msaR)
+library(ape)
+```
+
+```{r}
+gff<-list()
+gff[["parg"]]<-read.gff("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/annotations/Parg.OR.gff3")
+```
+
+
+```{r}
+head(gff[[1]])
+
+genes<-subset(gff[[1]],type=="gene")
+
+plot(genes$start)
+
+head(genes)
+distance<-vector()
+for(i in 1:(length(genes$start)-1)){
+  distance[i]<-(genes$end[i]-genes$start[i+1])
+}
+starts<-genes$start
+names(starts)<-gsub(pattern = ".*ID=(.*);.*" , replacement = "\\1",genes$attributes,perl=T)
+# Ward Hierarchical Clustering
+d <- dist(starts, method = "euclidean") # distance matrix
+fit <- hclust(d, method="ward")
+plot(fit,cex=.2) # display dendogram
+groups <- cutree(fit, k=100) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters
+rect.hclust(fit, k=5, border="red")
+
+```
+

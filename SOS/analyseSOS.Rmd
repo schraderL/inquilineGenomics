@@ -1,0 +1,301 @@
+---
+title: "Inquiline Genomics: analysis and summary of RELAX"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+# Input data 
+### Load environment
+```{r include=FALSE}
+#install.packages("rjson")
+library("rjson")
+library(factoextra)
+library(plyr)
+library(tidyr)
+source("~/sciebo/librarySchrader.R")
+library("EnvStats")
+library("jmuOutlier")
+library(cowplot)
+```
+
+### Load data
+```{r include=FALSE}
+allRELAX<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/SOS/data/RELAX2.tsv", T,sep="\t")
+allABSREL<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/SOS/data/absREL.tsv", T,sep="\t")
+```
+
+```{r include=FALSE}
+all<-merge(allABSREL,allRELAX,by.x="OGid",by.y="OGid",all.x=T,all.y=T)
+attach(all)
+```
+
+
+```{r include=FALSE}
+plot(all$To1,all$Ro1)
+```
+
+```{r include=FALSE}
+
+boxplot(log(To1,2),log(To2,2),log(To3,2),log(Ro1,2),log(Ro2,2),log(Ro3,2),outline=F)
+boxplot(To1,To2,To3,Ro1,Ro2,Ro3,outline=F)
+
+plot(To1,Ro1,cex=.2,col=rgb(.2,.5,1,.8),xlim=c(0,1.5),ylim=c(0,1.5))
+points(To2,Ro2,cex=.2,col=rgb(1,.5,.2,.3))
+points(To3,Ro3,cex=.2,col=rgb(.1,1,.2,1))
+plot(To2,Ro2)
+boxplot(To1,Ro1,outline=F,main=c("omega1: Test vs Ref"))
+boxplot(To2,Ro2,outline=F,main=c("omega2: Test vs Ref"))
+boxplot(To3,Ro3,outline=F,main=c("omega3: Test vs Ref"))
+hist(To1,ylim=c(0,6000))
+hist(Ro1,ylim=c(0,6000))
+```
+```{r include=FALSE}
+# calculate minimal omega values
+To<-data.frame(cbind(To1,To2,To3))
+Ro<-data.frame(cbind(Ro1,Ro2,Ro3))
+Tp<-data.frame(cbind(Tp1,Tp2,Tp3))
+Rp<-data.frame(cbind(Rp1,Rp2,Rp3))
+rData<-data.frame(cbind(To,Tp,Ro,Rp))
+
+ToMIN<-apply(To, 1, FUN=min)
+RoMIN<-apply(Ro, 1, FUN=min)
+RoO<-data.frame(t(apply(Ro, 1, FUN=sort)))
+ToO<-data.frame(t(apply(To, 1, FUN=sort)))
+
+
+```
+
+```{r include=FALSE}
+pcaInput<-all[c("To1","To2","To3","Ro1","Ro2","Ro3")]
+res.pca<-prcomp(pcaInput,scale=T)
+plot(res.pca)
+plot(res.pca$rotation[,"PC1"],res.pca$rotation[,"PC2"],xlim=c(-0.6,0.2))
+segments(x0=res.pca$rotation[,"PC1"],x1=0,y0=res.pca$rotation[,"PC2"],y1=0,lty=2)
+text(res.pca$rotation[,"PC1"],res.pca$rotation[,"PC2"],names(res.pca$rotation[,"PC2"]),pos=2)
+
+```
+
+```{r include=FALSE}
+sig<-all$pval<0.05
+m <- ggplot(all, aes(x = log(ToMean/RoMean,2), y = log(To3/Ro3,2), color = sig)) +
+ geom_point(alpha=.1,cex=.1) 
+#m + geom_density_2d()
+m + geom_density_2d() + ylim(-5,5) + xlim(-5,5)
+```
+```{r include=FALSE}
+
+# These plots suggest that relaxed selection is increased in parasites (possibly due to Ne decrease?)
+#plot(log(ToMean/RoMean,2),col=addalpha(goodCols[1],.3),cex=.2,pch=19,ylim=c(-100,100))
+#boxplot(log(ToMean/RoMean,2),outline=F)
+#abline(h=0,col="red",lty=2)
+par(mfrow=c(1,2))
+#hist(log(k,2),xlim=c(-30,30),100,main="")
+#abline(v=0,col="red",lty=2,lwd=4)
+plot(density(log(k,2)),xlab="log(k,2)",main="")
+abline(v=0,col="red",lty=2)
+
+barplot(cbind(sum(k<1),sum(k>1)),col=goodCols[1:2],names=c("k<1","k>1"))
+
+boxplot(RoMean,ToMean,outline=F,names=c("R mean","T mean"))
+boxplot(P1om,PARGom,AINSom,ACHAom,AHEYom,AECHom,A1om,A2om,outline=F,names=c("P1om","PARGom","AINSom","ACHAom","AHEYom","AECHom","A1om","A2om"),las=2)
+
+
+for (i in c("P1om","PARGom","AINSom","ACHAom","AHEYom","AECHom","A1om","A2om")){
+  val<-c(val,unlist(all[i]))
+}
+val<-val[-1]
+names(val)<-as.factor(gsub("(.*om).*","\\1",names(val),perl=T))
+facts<-as.factor(names(val))
+
+pairwise.wilcox.test(x=val,g=facts,p.adjust.method = "fdr")
+
+```
+
+```{r include=FALSE}
+val<-NA
+#for (i in c("P1om","PARGom","AINSom","ACHAom","AHEYom","AECHom","A1om","A2om")){
+for (i in c("ACHAom","AHEYom")){
+  val<-c(val,unlist(all[i]))
+}
+val<-val[-1]
+names(val)<-as.factor(gsub("(.*om).*","\\1",names(val),perl=T))
+facts<-as.factor(names(val))
+
+pairwise.wilcox.test(x=val,g=facts,p.adjust.method = "fdr")
+
+library(coin)                    # for oneway_test(), pvalue()
+pvalue(ot<-oneway_test(val ~ facts, 
+                   distribution=approximate(nresample=999)))
+
+
+pvalue(ft<-friedman_test(val ~ facts,
+                   distribution=approximate(nresample=999)))
+
+pvalue(ft<-wilcox_test(val ~ facts,
+                   distribution=approximate(nresample=999)))
+
+```
+
+```{r include=FALSE}
+#sig<-all$k<1
+m <- ggplot(all, aes(x = log(ToMean/RoMean,2), y = all$k)) +
+ geom_point(alpha=.1,cex=.1) 
+#m + geom_density_2d()
+m + geom_density_2d() + ylim(-5,5) + xlim(-5,5)
+
+```
+```{r include=FALSE}
+subset(all,k<1 & To3 <1.1 & ToMean >0.9)
+
+```
+
+### Plot plot for supplement, analyse RELAX2 results
+```{r echo=FALSE}
+# Background Omega
+backgroundOmega<-data.frame(cbind(allRELAX$ToMean,allRELAX$RoMean))
+colnames(backgroundOmega)<-c("T","R")
+backgroundOmegaS<-stack(backgroundOmega)
+pB <- ggplot(backgroundOmegaS, aes(x=ind, y=values,fill=ind)) + 
+  geom_violin() + 
+  theme(axis.text.x = element_text(angle = 0, hjust = 0)) + 
+  scale_y_continuous(name ="background omega") +
+  scale_x_discrete(name ="") +
+  scale_fill_manual(values=goodCols[c(5,1)]) +  
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.1,outlier.alpha = 0,fill=rgb(1,1,1,.8))
+
+# Omega3 rates
+Omega3<-data.frame(cbind(allRELAX$To3,allRELAX$Ro3))
+colnames(Omega3)<-c("T","R")
+Omega3S<-stack(Omega3)
+p3 <- ggplot(Omega3S, aes(x=ind, y=log(values,10),fill=ind)) + 
+  geom_violin()+
+  scale_y_continuous(name ="omega rate class 3, log10") +
+  scale_x_discrete(name ="") +
+  scale_fill_manual(values=goodCols[c(5,1)]) +  
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.1,outlier.alpha = 0,fill=rgb(1,1,1,.8))
+
+# K distribution
+kvals<-log(allRELAX$k,2)
+allRELAX$klog2<-log(allRELAX$k,2)
+pK1 <- ggplot(allRELAX, aes(x="",y=klog2,fill=goodCols[2])) + 
+  geom_violin() +
+  scale_fill_manual(values=goodCols[c(2)]) +
+  scale_x_discrete(name ="") +
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.1,outlier.alpha = 0,fill="white")+
+  scale_y_continuous(name="log2(k)",limits=c(-40,40))+
+  geom_hline(yintercept=0, linetype="dashed", color = "red")
+
+pK2 <- ggplot(allRELAX, aes(x="",y=klog2,fill=goodCols[2])) + 
+  geom_violin() +
+  scale_fill_manual(values=goodCols[c(2)]) +
+  scale_x_discrete(name ="") +
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.1,outlier.alpha = 0,fill="white")+
+  scale_y_continuous(name="",limits=c(-2.5,2.5))+
+  geom_hline(yintercept=0, linetype="dashed", color = "red")+
+  theme(axis.text.y = element_text(size = 6))
+
+
+              
+#omega3PT<-twoSamplePermutationTestLocation(allRELAX$To3,allRELAX$Ro3,fcn="median",paired=T,seed=1)
+
+
+```
+
+```{r include=FALSE}
+backgroundPT<-perm.test(allRELAX$ToMean,allRELAX$RoMean,stat=median,paired=T)
+
+print(backgroundPT)
+omega3PT<-perm.test(allRELAX$To3,allRELAX$Ro3,stat=median,paired=T)
+print(omega3PT)
+median(allRELAX$klog2)
+kPT<-perm.test(allRELAX$klog2,mu = 0,stat=median)
+print(kPT)
+```
+
+```{r echo=FALSE}
+
+pB<-pB+scale_x_discrete(name =paste("perm. test: T > R; p<",ifelse(backgroundPT$p.value==0,"1e-16",backgroundPT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
+p3<-p3+scale_x_discrete(name =paste("perm. test: T < R; p<",ifelse(omega3PT$p.value==0,"1e-16",omega3PT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
+pK1<-pK1+scale_x_discrete(name =paste("perm. test: log2(k) < 0; p<",ifelse(kPT$p.value==0,"1e-16",kPT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
+
+library(viridis)
+pK<-ggdraw() +
+  draw_plot(pK1 + theme(legend.justification = "bottom"), 0, 0, 1, 1) +
+  draw_plot(pK2 + scale_color_viridis(discrete = TRUE) + 
+              theme(legend.justification = "top"), 0.5, 0.52, 0.5, 0.4)
+plot_grid(pB,p3,pK,ncol=3,labels = c("A","B","C"))
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/plots/RELAX2.summary.pdf",width=8,height=5)
+
+```
+
+```{r include=T}
+omABSREL<-allABSREL[c("P1om","PARGom","AINSom","ACHAom","AHEYom","AECHom","A1om","A2om")]
+boxplot(P1om,PARGom,AINSom,ACHAom,AHEYom,AECHom,A1om,A2om,outline=F,names=c("P1om","PARGom","AINSom","ACHAom","AHEYom","AECHom","A1om","A2om"),las=2)
+
+stackABSREL<-stack(omABSREL)
+pA <- ggplot(stackABSREL, aes(x=ind, y=log(values,2),fill=ind)) + 
+  geom_violin() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  scale_y_continuous(name ="branch log2(omega)",limits=c(-5,5)) +
+  scale_x_discrete(name ="") +
+  scale_fill_manual(values=goodCols[c(1:8)]) +  
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.3,outlier.alpha = 0,fill=rgb(1,1,1,1))
+pA
+
+
+pA2 <- ggplot(stackABSREL, aes(x=ind, y=values,fill=ind)) + 
+  geom_violin() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  scale_y_continuous(name ="branch omega",limits=c(0,1.8)) +
+  scale_x_discrete(name ="") +
+  scale_fill_manual(values=goodCols[c(1:8)]) +  
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.3,outlier.alpha = 0,fill=rgb(1,1,1,1))
+pA2
+```
+```{r}
+allRELAX$fdr<-p.adjust(allRELAX$pval,method="fdr")
+colFDR<-ifelse(allRELAX$fdr<0.05,goodCols[1],goodCols[5])
+
+
+h <- hist(allRELAX$fdr, breaks=100, plot=FALSE)
+cuts <- cut(h$breaks, c(-Inf,0.05,0.1))
+par(mai=c(.8,.8,0,0))
+plot(h, col=c("red","orange")[cuts],xlab="FDR",main="")
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/plots/RELAX2.fdr.pdf",width=4,height=3)
+```

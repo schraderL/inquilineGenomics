@@ -1,0 +1,71 @@
+---
+title: "Inquiline Genomics: OR analysis"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+# Input data 
+### Load environment
+```{r}
+library(plyr)
+library(tidyr)
+library(tidyverse)
+library(g)
+```
+
+### Locate data
+```{r}
+folder<-"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/annotations/"
+files<-dir(folder,pattern =".stats")
+```
+
+```{r}
+result<-list()
+for (q in 1:length(files)){
+  species<-gsub(pattern="(.?+)\\..*","\\1",perl=T,x=files[q])
+  result[[species]] <- read_table(file = paste(folder,files[q],sep=""),skip=2,F)
+  #colnames(result[[species]])<-c("stat","empty",species)
+}
+data <- do.call(cbind, result)
+data2<-data.frame(t(data[,grep(colnames(data),pattern="X3")]))
+colnames(data2)<-gsub(x=data$Acep.X1,pattern=" ","_")
+rownames(data2)<-substr(rownames(data2),1,4)
+write.table(data2,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/annotations/AllAttines.OR.stats.tsv",sep="\t",quote = F)
+```
+```{r}
+
+m3 <- ggplot(data2, aes(x = Total_sequence_length, y = Number_of_genes))
+#+ geom_point(alpha=.1,cex=.1) 
+m3
+```
+

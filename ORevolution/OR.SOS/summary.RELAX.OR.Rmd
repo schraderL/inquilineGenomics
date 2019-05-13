@@ -1,0 +1,273 @@
+---
+title: "Inquiline Genomics: analysis and summary of RELAX"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+# Input data 
+### Load environment
+```{r}
+#install.packages("rjson")
+library("rjson")
+library(plyr)
+library(tidyr)
+```
+
+### Locate data
+```{r}
+## All parasite terminal branches vs all terminal leaf-cutter branches in OR clades
+folder<-"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/OR.SOS/RELAX/"
+files<-dir(folder,pattern =".json")
+```
+
+### Retrieve branch wide dN/dS estimates for all SCOs
+
+```{r}
+
+pval<-NA
+k<-NA
+dNref<-NA
+dNtest<-NA
+OGid<-NA
+refSet<-NA
+testSet<-NA
+results<-list()
+
+branchNames<-list()
+# loop over json file from each SCO and retrieve data. Store data in data frames 
+for (q in 1:length(files)){
+  OG<-gsub(pattern="(^.+?)\\.aln.*","\\1",perl=T,x=files[q])
+  OGid[q]<-OG
+  result <- fromJSON(file = paste(folder,files[q],sep=""))
+  results[[q]]<-result
+  pval[q]<- result$`test results`$`p-value`
+  k[q]<-    result$`test results`$`relaxation or intensification parameter`
+  dNref[q]<-result$fits$`MG94xREV with separate rates for branch sets`$`Rate Distributions`[[1]][[1]][1]
+  dNtest[q]<-result$fits$`MG94xREV with separate rates for branch sets`$`Rate Distributions`[[2]][[1]][1]
+  branchNames[[q]]<-sort(names(result$`branch attributes`$`0`))
+  refSet[q]<-paste(names(results[[q]]$tested$`0`)[grep("Reference",unlist(results[[q]]$tested$`0`))],collapse=",")
+  testSet[q]<-paste(names(results[[q]]$tested$`0`)[grep("Test",unlist(results[[q]]$tested$`0`))],collapse=",")
+}  
+
+#result$fits$`RELAX null`$`Rate Distributions`$Test
+#result$fits$`RELAX null`$`Rate Distributions`$Reference
+# branch names
+#bn <- data.frame(do.call("rbind", branchNames))
+```
+
+```{r}
+
+To1<-NA
+To2<-NA
+To3<-NA
+Tp1<-NA
+Tp2<-NA
+Tp3<-NA
+Ro1<-NA
+Ro2<-NA
+Ro3<-NA
+Rp1<-NA
+Rp2<-NA
+Rp3<-NA
+
+for (q in 1:length(results)){
+  To1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[1]]$omega
+  To2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[2]]$omega
+  Tp1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[1]]$proportion
+  Tp2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[2]]$proportion
+  
+  To3[q]<-NA
+  Tp3[q]<-NA
+  if(Tp1[q]+Tp2[q]!=1){
+    To3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[3]]$omega
+    Tp3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Test[[3]]$proportion
+      }
+  Ro1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[1]]$omega
+  Ro2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[2]]$omega
+  Rp1[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[1]]$proportion
+  Rp2[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[2]]$proportion
+  Ro3[q]<-NA
+  Rp3[q]<-NA
+  if(Rp1[q]+Rp2[q]!=1){
+    Ro3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[3]]$omega
+    Rp3[q]<-results[[q]]$fits$`RELAX alternative`$`Rate Distributions`$Reference[[3]]$proportion
+    }
+  
+}
+```
+
+```{r}
+# calculate minimal omega values
+To<-data.frame(cbind(To1,To2,To3))
+Ro<-data.frame(cbind(Ro1,Ro2,Ro3))
+Tp<-data.frame(cbind(Tp1,Tp2,Tp3))
+Rp<-data.frame(cbind(Rp1,Rp2,Rp3))
+
+
+for(i in 1:length(To)){
+  reorderingTo<-order(To[i,1:3],decreasing=F)
+  reorderingRo<-order(Ro[i,1:3],decreasing=F)
+  To[1,1:3]<-To[1,reorderingTo]
+  Tp[1,1:3]<-Tp[1,reorderingTo]
+  Ro[1,1:3]<-Ro[1,reorderingRo]
+  Rp[1,1:3]<-Rp[1,reorderingRo]
+  if(reorderingRo[1] != 1){
+    print(reorderingRo)
+  }
+  if(reorderingTo[1] != 1){
+    print(reorderingTo)
+  }
+}
+
+
+ToMean<-(Tp1*To1)+(Tp2*To2)
+RoMean<-(Rp1*Ro1)+(Rp2*Ro2)
+rData<-data.frame(cbind(To,Tp,Ro,Rp,ToMean,RoMean))
+
+```
+
+### Create dataframes
+```{R}
+## pvalues
+#pval
+## dNref
+#dNref
+## dNtest
+#dNtest
+
+### create one big data frame
+allRELAX<-data.frame(cbind(OGid,dNref) %>% cbind(.,dNtest) %>% cbind(.,k) %>% cbind(.,pval) %>% cbind(.,rData,testSet,refSet),stringsAsFactors = F)
+allRELAX$k<-as.numeric(as.character(allRELAX$k))
+allRELAX$pval<-as.numeric(as.character(allRELAX$pval))
+allRELAX$fdr<-p.adjust(allRELAX$pval,'fdr')
+
+```
+
+### Plot results
+```{r}
+boxplot(log(allRELAX$k,2),outline=F,ylab="log2(k)")
+boxplot(allRELAX$RoMean,allRELAX$ToMean,outline=F,ylab="omega",names=c("Rmean","Tmean"))
+boxplot(allRELAX$Ro1,allRELAX$To1,allRELAX$Ro2,allRELAX$To2,allRELAX$Ro3,allRELAX$To3,outline=F,names=c("R1","T1","R2","T2","R3","T3"),ylab="omega")
+boxplot(log(allRELAX$Ro1,2),log(allRELAX$To1,2),log(allRELAX$Ro2,2),log(allRELAX$To2,2),log(allRELAX$Ro3,2),log(allRELAX$To3,2),outline=F,names=c("R1","T1","R2","T2","R3","T3"),ylab="log2(omega)")
+plot(log(allRELAX$ToMean/allRELAX$RoMean,2),ylim=c(-120,120),ylab="log2(Tmean/Rmean)",cex=.2)
+median(log(allRELAX$ToMean/allRELAX$RoMean,2),na.rm=T)
+```
+```{r}
+subset(allRELAX,fdr<0.1 & k<1)
+subset(allRELAX,fdr<0.1 & k>1)
+```
+```{r fig.height=3, fig.width=4}
+library(ggplot2)
+source("~/sciebo/librarySchrader.R")
+k_value<-ifelse(allRELAX$k<1,"k<1","k>1")
+col<-ifelse(allRELAX$k<1,goodCols[1],goodCols[3])
+
+k_value<-ifelse(!grepl("Parg",allRELAX$testSet),"Parg lost","Parg present")
+col<-ifelse(!grepl("Parg",allRELAX$testSet),goodCols[1],goodCols[3])
+
+k_value<-ifelse(!grepl("9E",allRELAX$OGid),"other","9E")
+col<-ifelse(!grepl("9E",allRELAX$OGid),goodCols[1],goodCols[3])
+
+#k_value<-ifelse(!grepl("9E",allRELAX$OGid),"other","9E")
+#col<-ifelse(!grepl("Parg",allRELAX$testSet),goodCols[1],goodCols[3])
+
+
+m3 <- ggplot(allRELAX, aes(x = ToMean, y = RoMean,colour = k_value)) + geom_point(alpha=.2,cex=2,color=col) 
+m3 + geom_density_2d(alpha=1,cex=.3) +  scale_color_manual(values = c(goodCols[1],goodCols[3]))+theme_light() + xlim(0,1) + ylim(0,1)
+#plot(density(log(allRELAX$k,2)),col="red",lwd=2,xlim=c(-70,70))
+
+
+```
+```{r fig.height=4, fig.width=2}
+allOG<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/SOS/data/RELAX2.tsv",sep="\t")
+boxplot(log(allRELAX$k,2),sample(log(allOG$k,2),length(allRELAX$k)),outline=F,names=c("ORs","SCOs"),las=2,ylab="log2(k)")
+```
+```{r}
+allRELAX$sf<-as.factor(gsub("-.*","",allRELAX$OGid))
+ggplot(allRELAX, aes(x=sf, y=log(k,2), fill=sf)) + 
+    geom_boxplot() + theme_classic() 
+#ggplot(allRELAX, aes(x=sf, y=ToMean, fill=sf)) + 
+#    geom_boxplot() + theme_classic()
+
+#hist(log(allRELAX$k[allRELAX$sf=="9E"],2),20)
+```
+
+```{R}
+v1<-(unlist(subset(allRELAX,sf=="9E",k)))
+v2<-(unlist(subset(allRELAX,sf=="E",k)))
+v3<-(unlist(subset(allRELAX,sf=="L",k)))
+v4<-(unlist(subset(allRELAX,sf=="V",k)))
+wilcox.test(v1,v2,alternative="less")
+
+
+v1<-log(unlist(subset(allRELAX,sf=="9E",k)),2)
+v2<-log(unlist(subset(allRELAX,sf=="E",k)),2)
+v3<-log(unlist(subset(allRELAX,sf=="L",k)),2)
+v4<-log(unlist(subset(allRELAX,sf=="V",k)),2)
+boxplot(v1,v2,v3,v4,outline=F)
+```
+```{r}
+library(coin)
+v1<-allRELAX$ToMean[allRELAX$sf=="9E"]
+v2<-allRELAX$ToMean[allRELAX$sf!="9E"]
+f1<-rep("9E",length(v1))
+f2<-rep("O",length(v2))
+f<-as.factor(c(f1,f2))
+boxplot(v1,v2,outline=F,names=c("9E","others"),ylab="mean omega in test set")
+
+wilcox_test(c(v1,v2)~f,distribution = approximate(nresample = 10000))
+
+
+v1<-allRELAX$RoMean[allRELAX$sf=="9E"]
+v2<-allRELAX$RoMean[allRELAX$sf!="9E"]
+f1<-rep("9E",length(v1))
+f2<-rep("O",length(v2))
+f<-as.factor(c(f1,f2))
+
+wilcox_test(c(v1,v2)~f,distribution = approximate(nresample = 10000))
+
+boxplot(v1,v2,outline=F,names=c("9E","others"),ylab="mean omega in reference set")
+
+boxplot(allRELAX$k[allRELAX$sf=="9E"],allRELAX$k[allRELAX$sf!="9E"],outline=F)
+```
+
+### write to file
+```{r}
+write.table(allRELAX,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/OR.SOS/results/allRELAX.tsv", sep = "\t",quote = F, row.names=F)
+```
+
+```{r}
+(subset(allRELAX,fdr<0.1 & k<1))
+```
+
+

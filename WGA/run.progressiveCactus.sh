@@ -76,3 +76,10 @@ done
 
 
 #nice halPhyloPTrain.py attines.hal AECH neutralRegions.bed neutralModel.mod --numProc 12
+
+########################################
+# Create Syntenic Blocks
+########################################
+cd $base/attines/synteny/
+source /usr/local/home/lschrader/software/cactus/progressiveCactus/environment
+hal2synteny ../attines.hal syntey.PARG-ACOL.psl --queryGenome PARG --targetGenome ACOL --maxAnchorDistance 1000000 --minBlockSize 1000000

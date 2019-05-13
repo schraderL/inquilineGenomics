@@ -2,9 +2,9 @@
 # TAG: 1. prepare environment
 ##################################################################
 scripts=~/data/inqGen18/geneFamilies/specificFamilies/scripts
-base=~/data/inqGen18/geneFamilies/specificFamilies/
+base=~/data/inqGen18/geneFamilies/specificFamilies/MRJPs
 
-cd $base/cleanGFFs
+cd $base/webapolloGFFs
 
 ##################################################################
 # TAG: 2. clean GFFs
@@ -30,7 +30,8 @@ bash $scripts/cleanGFFs.sh Aech $base/webapolloGFFs/cleaned_Aech_MRJP_apollo_Ann
 # TAG: 3. align proper genes (peptides)
 ##################################################################
 
-cd $base/fasta
+cd $base/aln
+#ls  ../cleanGFFs/*/*pep
 ln -s ../cleanGFFs/*/*pep .
 for i in $(ls *.MRJPs.pep)
 do
@@ -38,11 +39,59 @@ do
   cat $i |sed "s/>/>$species-/g"
 done > MRJPs.pep
 unset MAFFT_BINARIES
-prank MRJPs.pep
+prank -o=MRJPs.pep.aln -d=MRJPs.pep
+#cat MRJPs.pep.aln.best.fas |perl -pe 's/(>.*?)_.*/$1/g' > tmp.aln
 
-cat output.best.fas |perl -pe 's/(>.*?)_.*/$1/g' > tmp.aln
-FastTree tmp.aln > MRJP.best.tre
+antAln=$(readlink -f MRJPs.pep.aln.best.fas)
 
+##################################################################
+# TAG: 4. Create A. mellifera MRJP/yellow phylogeny
+##################################################################
+cd $base/Amel.reference
+mkdir gb
+esearch -db protein -query "(yellow OR MRJP) AND (Apis mellifera[organism]) AND srcdb+refseq[prop]" < /dev/null|elink -target gene|efetch -format tabular > Amel.y.tsv
+
+for i in $(cut -f 3 Amel.y.tsv|sed 1d); do
+  esearch -db protein -query "($i) AND (Apis mellifera[organism]) AND srcdb+refseq[prop]" < /dev/null|efetch -format gb > $base/gb/Amel.$i.gb
+
+for i in $(cut -f 3 Amel.y.tsv|sed 1d); do
+# convert gb entry to fasta with gene="<>" tag and all splice forms
+cat gb/Amel.$i.gb|\
+awk '/^ACCESSION   / {printf(">%s\t",$2);next;} \
+     /[[:space:]]*\/gene\=/ {{match($0,"gene=.*",a)}{print a[0];next;}} \
+     /^ORIGIN/ {inseq=1;next;} /^\/\// {inseq=0;} {if(inseq==0) next;\
+      gsub(/[0-9 ]/,"",$0); printf("%s\n",toupper($0));}' > fa/Amel.$i.fa
+
+# select longest isoform from all splice forms
+cat fa/Amel.$i.fa|\
+awk '/^>/ {if(N>0) printf("\n"); printf("%s\t",$0);N++;next;} {printf("%s",$0);} END {if(N>0) printf("\n");}' |\
+awk -F '\t'  '{printf("%s\t%d\n",$0,length($3));}' |\
+sort -k2,2 -k4,4nr |\
+sort -k2,2 -u -s |\
+awk '{print $1";symbol="$2";length="$4"\n"$3}'> lfa/Amel.$i.longestIsoform.fa
+done
+cd $base/aln
+
+cat ../lfa/* > Amel.fa
+unset MAFFT_BINARIES
+prank -o=Amel.mrjp.aln -d=Amel.fa
+
+AmelAln=$(readlink -f Amel.mrjp.aln.best.fas)
+
+##################################################################
+# TAG: 5. Combine Ant and Amel alignments
+##################################################################
+
+cd $base/aln/mergeAln
+prank -d1=$antAln -d2=$AmelAln -o=merged.aln
+cat merged.aln.fas |perl -pe 's/(>.*?-.*?-.*?)-.*/$1/g'|perl -pe 's/.*gene=\"(.*?)\";.*/>$1/g' > output.aln.fas
+FastTree output.aln.fas > output.aln.tre
+
+# RaxML on aa aln
+nice raxmlHPC-PTHREADS -f a -m PROTGAMMALG -p 12345 -x 12345 -# autoMRE -s output.aln.fas -n r1 -T 20
+
+
+#FastTree tmp.aln > MRJP.best.tre
 
 ##################################################################
 # TAG: 3. raxML phylogeny
