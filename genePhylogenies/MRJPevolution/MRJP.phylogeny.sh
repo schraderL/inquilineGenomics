@@ -94,8 +94,15 @@ nice raxmlHPC-PTHREADS -f a -m PROTGAMMALG -p 12345 -x 12345 -# autoMRE -s outpu
 #FastTree tmp.aln > MRJP.best.tre
 
 ##################################################################
-# TAG: 3. raxML phylogeny
+# TAG: 6. raxML phylogeny
 ##################################################################
 
 nice raxmlHPC-PTHREADS -f a -m PROTGAMMALG -p 12345 -x 12345 -# autoMRE -soutput.aln.fas -n r1 -T 20
 #/corefac/cse/lukas/inqGen18/geneFamilies/specificFamilies/MRJPs/aln/mergeAln/RAxML_bipartitionsBranchLabels.r1
+
+
+#################################################################
+# Tag 7: Create overview tsv
+#################################################################
+
+seqkit fx2tab MRJPs.pep|awk '{print $1,$2,substr($4,1,1)substr($4, length($4), length($4)),$3,$4}' |tr " " "\t" > MRJPs.details.tsv

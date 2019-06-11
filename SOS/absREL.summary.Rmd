@@ -45,7 +45,7 @@ library(tidyr)
 
 ### Locate data
 ```{r}
-folder<-"/Users/lukas/sciebo/inquilineGenomics18/SOS/results/"
+folder<-"/Users/lukas/sciebo/inquilineGenomics18/SOS/ABSREL/results/"
 files<-dir(folder,pattern =".json")
 ```
 
@@ -140,7 +140,7 @@ boxplot(dn,outline=F)
 boxplot(ds,outline=T)
 boxplot(om,outline=F,las=2)
 boxplot(ot,outline=F,las=2)
-boxplot(subset(om,PARG<100 & AHEY<100 & P1 <100 & AINS<100 & ACHA <100 & ACOL<100 & AECH<100 & A1<100 & A2<100),outline=F,las=2)
+boxplot(subset(om,PARGom<100 & AHEYom<100 & P1om <100 & AINSom<100 & ACHAom<100 & ACOLom<100 & AECHom<100 & A1om<100 & A2om<100),outline=F,las=2)
 ```
 
 ### Load GO annotations
@@ -252,6 +252,18 @@ P1[order(P1$P1pv),]
 subset(allABSREL,P1pv<0.005 & AINSpv<0.005)
 ```
 
+### Calculate FDR for absREL tests
+```{r}
+
+pvAll<-grep("pv",colnames(allABSREL),value = T)
+pv<-pvAll[c(3,7,8,9)]
+fdr<-gsub("pv","fdr",pv)
+pvLength<-length(unlist(allABSREL[,pv]))
+for(i in 1:length(pv)){
+  allABSREL[fdr[i]]<-p.adjust(allABSREL[,pv[i]],n=pvLength,method="fdr")
+  }
+
+```
 
 ### write to file
 ```{r}

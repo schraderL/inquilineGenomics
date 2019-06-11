@@ -56,3 +56,8 @@ cat $base/output/Parg.pep.fa.TPSI.topHits|perl -pe 's/Parg_([0-9]{5})/PARG$1/g' 
 
 rm *.prot.lst
 ############################
+
+cd $base/output
+ls *pep.fa.TPSI.topHits| parallel --nice 10 'echo {}|cut -f 1 -d "."' > ../species.tsv
+ls *pep.fa.TPSI.topHits| parallel --nice 10 'egrep "^//" {} -v|cut -f 6|wc -l' > ../topHits.tsv
+paste ../species.tsv ../topHits.tsv > ../transposonPsiResults.out

@@ -59,11 +59,8 @@ all<-merge(allABSREL,allRELAX,by.x="OGid",by.y="OGid",all.x=T,all.y=T)
 attach(all)
 ```
 
-
-```{r include=FALSE}
-plot(all$To1,all$Ro1)
-```
-
+# Analyse RELAX results
+### Basic analyses
 ```{r include=FALSE}
 
 boxplot(log(To1,2),log(To2,2),log(To3,2),log(Ro1,2),log(Ro2,2),log(Ro3,2),outline=F)
@@ -79,6 +76,7 @@ boxplot(To3,Ro3,outline=F,main=c("omega3: Test vs Ref"))
 hist(To1,ylim=c(0,6000))
 hist(Ro1,ylim=c(0,6000))
 ```
+
 ```{r include=FALSE}
 # calculate minimal omega values
 To<-data.frame(cbind(To1,To2,To3))
@@ -130,14 +128,6 @@ boxplot(RoMean,ToMean,outline=F,names=c("R mean","T mean"))
 boxplot(P1om,PARGom,AINSom,ACHAom,AHEYom,AECHom,A1om,A2om,outline=F,names=c("P1om","PARGom","AINSom","ACHAom","AHEYom","AECHom","A1om","A2om"),las=2)
 
 
-for (i in c("P1om","PARGom","AINSom","ACHAom","AHEYom","AECHom","A1om","A2om")){
-  val<-c(val,unlist(all[i]))
-}
-val<-val[-1]
-names(val)<-as.factor(gsub("(.*om).*","\\1",names(val),perl=T))
-facts<-as.factor(names(val))
-
-pairwise.wilcox.test(x=val,g=facts,p.adjust.method = "fdr")
 
 ```
 
@@ -235,6 +225,7 @@ pK2 <- ggplot(allRELAX, aes(x="",y=klog2,fill=goodCols[2])) +
 
 ```
 
+### Permutation tests
 ```{r include=FALSE}
 backgroundPT<-perm.test(allRELAX$ToMean,allRELAX$RoMean,stat=median,paired=T)
 
@@ -246,6 +237,8 @@ kPT<-perm.test(allRELAX$klog2,mu = 0,stat=median)
 print(kPT)
 ```
 
+
+### Create plot with p-values
 ```{r echo=FALSE}
 
 pB<-pB+scale_x_discrete(name =paste("perm. test: T > R; p<",ifelse(backgroundPT$p.value==0,"1e-16",backgroundPT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
@@ -258,13 +251,27 @@ pK<-ggdraw() +
   draw_plot(pK2 + scale_color_viridis(discrete = TRUE) + 
               theme(legend.justification = "top"), 0.5, 0.52, 0.5, 0.4)
 plot_grid(pB,p3,pK,ncol=3,labels = c("A","B","C"))
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/plots/RELAX2.summary.pdf",width=8,height=5)
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/plots/RELAX2.summary.pdf",width=8,height=5)
 
 ```
+### Plot p-value distribution for RELAX
+```{r}
+allRELAX$fdr<-p.adjust(allRELAX$pval,method="fdr")
+colFDR<-ifelse(allRELAX$fdr<0.05,goodCols[1],goodCols[5])
 
+
+h <- hist(allRELAX$fdr, breaks=100, plot=FALSE)
+cuts <- cut(h$breaks, c(-Inf,0.05,0.1))
+par(mai=c(.8,.8,0,0))
+plot(h, col=c("red","orange")[cuts],xlab="FDR",main="")
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/plots/RELAX2.fdr.pdf",width=4,height=3)
+```
+
+# Analyse ABSREL results
+### plot omega rates inferred with absREL
 ```{r include=T}
 omABSREL<-allABSREL[c("P1om","PARGom","AINSom","ACHAom","AHEYom","AECHom","A1om","A2om")]
-boxplot(P1om,PARGom,AINSom,ACHAom,AHEYom,AECHom,A1om,A2om,outline=F,names=c("P1om","PARGom","AINSom","ACHAom","AHEYom","AECHom","A1om","A2om"),las=2)
+
 
 stackABSREL<-stack(omABSREL)
 pA <- ggplot(stackABSREL, aes(x=ind, y=log(values,2),fill=ind)) + 
@@ -277,7 +284,6 @@ pA <- ggplot(stackABSREL, aes(x=ind, y=log(values,2),fill=ind)) +
   geom_boxplot(width=0.3,outlier.alpha = 0,fill=rgb(1,1,1,1))
 pA
 
-
 pA2 <- ggplot(stackABSREL, aes(x=ind, y=values,fill=ind)) + 
   geom_violin() + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
@@ -288,14 +294,51 @@ pA2 <- ggplot(stackABSREL, aes(x=ind, y=values,fill=ind)) +
   geom_boxplot(width=0.3,outlier.alpha = 0,fill=rgb(1,1,1,1))
 pA2
 ```
+
+
 ```{r}
-allRELAX$fdr<-p.adjust(allRELAX$pval,method="fdr")
-colFDR<-ifelse(allRELAX$fdr<0.05,goodCols[1],goodCols[5])
 
+branchNames<-c("P1om","PARGom","AINSom","ACHAom","AHEYom","AECHom","A1om","A2om")
+bp<-boxplot(allABSREL$P1om,allABSREL$PARGom,allABSREL$AINSom,allABSREL$ACHAom,allABSREL$AHEYom,allABSREL$AECHom,allABSREL$A1om,allABSREL$A2om,outline=F,names=c("P1om","PARGom","AINSom","ACHAom","AHEYom","AECHom","A1om","A2om"),las=2,plot=F)
+medianOmega<-bp$stats[3,]
+names(medianOmega)<-bp$names
+medianOmega
 
-h <- hist(allRELAX$fdr, breaks=100, plot=FALSE)
-cuts <- cut(h$breaks, c(-Inf,0.05,0.1))
-par(mai=c(.8,.8,0,0))
-plot(h, col=c("red","orange")[cuts],xlab="FDR",main="")
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/plots/RELAX2.fdr.pdf",width=4,height=3)
+tmp<-matrix(ncol=length(branchNames),nrow=length(branchNames))
+tmp2<-list(P1om,PARGom,AINSom,ACHAom,AHEYom,AECHom,A1om,A2om)
+tmp3<-list()
+for (i in 1:8){
+  tmp3[[i]]<-lapply(tmp2,function(x) perm.test(x[!is.na(x) & !is.na(tmp2[[1]])],tmp2[[i]][!is.na(x) & !is.na(tmp2[[1]])],num.sim=10000,paired=T,stat=median))
+}
+for(q in 1:8){
+for(p in 1:8){
+  tmp[q,p]<-tmp3[[q]][[p]]$p.value
+}
+}
+permPV<-tmp
+#perm.test(AINSom[!is.na(AINSom) & !is.na(A1om)],A1om[!is.na(AINSom) & !is.na(A1om)],paired = T,num.sim = 10000)
 ```
+
+
+```{r}
+summary(allABSREL$PARGfdr<0.05)
+summary(allABSREL$AINSfdr<0.05)
+summary(allABSREL$ACHAfdr<0.05)
+summary(allABSREL$P1fdr<0.05)
+
+fdrs<-allABSREL[,c("OGid","sAINS",grep("fdr",colnames(allABSREL),value=T))]
+fdrs$sig<-rowSums(fdrs[,3:6]<0.05)
+sigFDR<-subset(fdrs,sig>=1)
+sigFDR2<-subset(fdrs,sig>=2)
+sigFDR3<-subset(fdrs,sig>=3)
+sigFDR4<-subset(fdrs,sig>=4)
+
+sigFDRfull<-subset(all,OGid %in% sigFDR$OGid)
+sigFDR2full<-subset(all,OGid %in% sigFDR2$OGid)
+
+
+write.table(sigFDRfull,"/Users/lukas/sciebo/inquilineGenomics18/SOS/ABSREL/sigFDRfull.tsv",sep="\t",quote = F,row.names = F)
+write.table(sigFDR2full,"/Users/lukas/sciebo/inquilineGenomics18/SOS/ABSREL/sigFDR2full.tsv",sep="\t",quote = F,row.names = F)
+
+```
+

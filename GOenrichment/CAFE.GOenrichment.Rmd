@@ -35,7 +35,7 @@ output:
 </STYLE>
 
 # R steps
-```{r}
+```{r include=FALSE}
 source("https://bioconductor.org/biocLite.R")
 #biocLite("GO.db")
 library("topGO")
@@ -94,10 +94,13 @@ names(clusterNames) <- clusterNames
 #ClustersOfInterest<-unlist(subset(all,(AINSp<0.05 & AINS<AECH)|(PARGp<0.05 & PARG<AHEY) |(ACHAp<0.05 & ACHA<AHEY)|(ACHA.PARGp<0.05 & PARG<AHEY & ACHA<AHEY),ClusterID))
 
 ## origin of parasitism
-# ClustersOfInterest<-unlist(subset(all,(AINSp<0.05 & AINS <= AECH.AINSc & AINSc <= AECHc) & (ACHA.PARGp<0.05 & ACHA.PARGc <= AHEY.ACHA.PARGc & ACHAc <= AHEYc & PARGc <= AHEYc ),ClusterID))
+#ClustersOfInterest<-unlist(subset(all,(AINSp<0.05 & AINS <= AECH.AINSc & AINSc <= AECHc) & (ACHA.PARGp<0.05 & ACHA.PARGc <= AHEY.ACHA.PARGc & ACHAc <= AHEYc & PARGc <= AHEYc ),ClusterID))
 
 ## smaller in parasitism
-#ClustersOfInterest<-unlist(subset(all,(AINS < AECH) & (PARG <= AHEY & ACHA <= AHEY),ClusterID))
+ClustersOfInterest<-unlist(subset(all,(AINS < AECH) & (PARG < AHEY & ACHA < AHEY),ClusterID))
+
+## smaller in PARG
+#ClustersOfInterest<-unlist(subset(all,PARGp<0.1 & (PARG < AHEY),ClusterID))
 
 
 clusterList <- factor(as.integer(clusterNames %in% ClustersOfInterest))
@@ -107,7 +110,7 @@ table(clusterList)
 
 ```
 ```{r}
-subset(all,ClusterID %in% ClustersOfInterest)
+#subset(all,ClusterID %in% ClustersOfInterest)
 ```
 
 
@@ -151,15 +154,15 @@ BP
 CC
 ```
 ```{r}
-
 ```
+
 
 
 ### write to file
 ```{r}
 # Origins of social parasitism, significant families
-res<-rbind(MF,BP) %>% rbind(.,CC)
-outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.CAFE.parasiteOrigins.tsv"
+#res<-rbind(MF,BP) %>% rbind(.,CC)
+#outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.CAFE.parasiteOrigins.tsv"
 #write.table(res,outfile,quote=F,sep="\t",row.names = F)
 #cat("# GO enrichment of gene families significantly (p<0.05) smaller at both origins or parasitism. \n",file=outfile)
 #write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
@@ -168,9 +171,9 @@ outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichm
 # All families smaller in parasite species than host species
 res<-rbind(MF,BP) %>% rbind(.,CC)
 outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.CAFE.parasites.tsv"
-#write.table(res,outfile,quote=F,sep="\t",row.names = F)
-#cat("# GO enrichment of gene families smaller in parasites than in hosts. \n",file=outfile)
-#write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
+write.table(res,outfile,quote=F,sep="\t",row.names = F)
+cat("# GO enrichment of gene families smaller in parasites than in hosts. \n",file=outfile)
+write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
 
 
 ```
@@ -179,7 +182,8 @@ outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichm
 
 
 ```{r}
-tmp<-unlist(subset(all,OGid %in% genesInTerm(GOdata_MF, "GO:0060089")[[1]],OGid))
+#tmp<-unlist(subset(all,OGid %in% genesInTerm(GOdata_MF, "GO:0060089")[[1]],OGid))
+subset(all,ClusterID %in% genesInTerm(GOdata_MF, "GO:0016298")[[1]] & PARG<AHEY)
 
 ```
 

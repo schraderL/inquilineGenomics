@@ -41,7 +41,7 @@ output:
 # R steps
 ```{r}
 #source("https://bioconductor.org/biocLite.R")
-#BiocManager::install("GO.db")
+BiocManager::install("GO.db")
 biocLite("GO.db")
 library("topGO")
 library(dplyr)
@@ -86,7 +86,9 @@ names(scoNames) <- scoNames
 #SCOOfInterest<-unlist(subset(all,p.adjust(P1pv,method = "fdr")<0.05 | p.adjust(AINSpv,method = "fdr")<0.05 | p.adjust(PARGpv,method = "fdr")<0.05 | p.adjust(ACHApv,method = "fdr")<0.05,OGid))
 
 # Origin of parasitism
-SCOOfInterest<-unlist(subset(all,p.adjust(P1pv,method = "fdr")<0.1 | p.adjust(AINSpv,method = "fdr")<0.1 ,OGid))
+#SCOOfInterest<-unlist(subset(all,PARGfdr<0.05 | AINSfdr<0.05 | ACHAfdr<0.05 |  P1fdr<0.05,OGid))
+SCOOfInterest<-unlist(subset(all,AINSfdr<0.1 |  P1fdr<0.1,OGid))
+#SCOOfInterest<-unlist(subset(all,PARGfdr<0.05,OGid))
 
 #SCOOfInterest<-unlist(subset(all,p.adjust(PARGpv,method = "fdr")<0.05 ,OGid))
 #SCOOfInterest<-unlist(subset(all,p.adjust(ACHApv,method = "fdr")<0.05 ,OGid))
@@ -144,8 +146,14 @@ CC
 ```
 ```{r}
 
-subset(all,OGid %in% genesInTerm(GOdata_MF, "GO:0016886")[[1]],kegg)
-subset(all,OGid %in% genesInTerm(GOdata_BP, "GO:0042440")[[1]],kegg)
+subset(all,OGid %in% genesInTerm(GOdata_BP, "GO:0006928")[[1]] & (AINSfdr<0.05 | PARGfdr<0.05|P1fdr<0.05|ACHAfdr<0.05))
+subset(all,OGid %in% genesInTerm(GOdata_BP, "GO:0006030")[[1]] & (AINSfdr<0.05 | PARGfdr<0.05|P1fdr<0.05|ACHAfdr<0.05))
+subset(all,OGid %in% genesInTerm(GOdata_BP, "GO:0023051")[[1]] & (AINSfdr<0.05 | PARGfdr<0.05|P1fdr<0.05|ACHAfdr<0.05))
+
+subset(all,OGid %in% genesInTerm(GOdata_BP, "GO:0000272")[[1]] & (AINSfdr<0.05 | PARGfdr<0.05|P1fdr<0.05|ACHAfdr<0.05))
+
+subset(all,OGid %in% genesInTerm(GOdata_MF, "GO:0008289")[[1]] & (AINSfdr<0.05 | PARGfdr<0.05|P1fdr<0.05|ACHAfdr<0.05))
+
 
 
 ```
@@ -156,8 +164,8 @@ subset(all,OGid %in% genesInTerm(GOdata_BP, "GO:0042440")[[1]],kegg)
 res<-rbind(MF,BP) %>% rbind(.,CC)
 outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.absREL.parasiteOrigins.tsv"
 #write.table(res,outfile,quote=F,sep="\t",row.names = F)
-#cat("# GO enrichment of genes under positive selection at any social parasite branch (at FDR<0.1). \n",file=outfile)
-#write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
+cat("# GO enrichment of genes under positive selection at either social parasite origin (AINS or P1) (at FDR<0.1). \n",file=outfile)
+write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
 
 
 ```

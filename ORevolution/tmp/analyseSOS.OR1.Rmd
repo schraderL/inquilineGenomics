@@ -1,0 +1,228 @@
+---
+title: "Inquiline Genomics: analysis of RELAX on OR clades"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+
+# Input data 
+### Load environment
+```{r}
+source("~/sciebo/librarySchrader.R")
+#install.packages("rjson")
+library("rjson")
+library(factoextra)
+library(plyr)
+library(tidyr)
+library("EnvStats")
+library("jmuOutlier")
+library(cowplot)
+library(viridis)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r}
+allRELAX<-read.table("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/OR.SOS/results/allRELAX.tsv",T)
+allRELAX$klog2<-log(allRELAX$k,2)
+```
+
+```{r}
+boxplot(log(allRELAX$k,2),outline=F)
+median(log(allRELAX$k,2))
+boxplot(allRELAX$ToMean,allRELAX$RoMean,outline=F)
+boxplot(log(allRELAX$To3,10),log(allRELAX$Ro3,10),outline=F)
+```
+```{r}
+# Background Omega
+backgroundOmega<-data.frame(cbind(allRELAX$ToMean,allRELAX$RoMean))
+colnames(backgroundOmega)<-c("T","R")
+backgroundOmegaS<-stack(backgroundOmega)
+pB <- ggplot(backgroundOmegaS, aes(x=ind, y=values,fill=ind)) + 
+  geom_violin() + 
+  theme(axis.text.x = element_text(angle = 0, hjust = 0)) + 
+  scale_y_continuous(name ="background omega") +
+  scale_x_discrete(name ="") +
+  scale_fill_manual(values=goodCols[c(5,1)]) +  
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.1,outlier.alpha = 0,fill=rgb(1,1,1,.8))
+
+# Omega3 rates
+Omega3<-data.frame(cbind(allRELAX$To3,allRELAX$Ro3))
+colnames(Omega3)<-c("T","R")
+Omega3S<-stack(Omega3)
+p3 <- ggplot(Omega3S, aes(x=ind, y=log(values,10),fill=ind)) + 
+  geom_violin()+
+  scale_y_continuous(name ="omega rate class 3, log10") +
+  scale_x_discrete(name ="") +
+  scale_fill_manual(values=goodCols[c(5,1)]) +  
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.1,outlier.alpha = 0,fill=rgb(1,1,1,.8))
+
+# K distribution
+kvals<-log(allRELAX$k,2)
+allRELAX$klog2<-log(allRELAX$k,2)
+pK1 <- ggplot(allRELAX, aes(x="",y=klog2,fill=goodCols[2])) + 
+  geom_violin() +
+  scale_fill_manual(values=goodCols[c(2)]) +
+  scale_x_discrete(name ="") +
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.1,outlier.alpha = 0,fill="white")+
+  scale_y_continuous(name="log2(k)",limits=c(-40,40))+
+  geom_hline(yintercept=0, linetype="dashed", color = "red")
+
+pK2 <- ggplot(allRELAX, aes(x="",y=klog2,fill=goodCols[2])) + 
+  geom_violin() +
+  scale_fill_manual(values=goodCols[c(2)]) +
+  scale_x_discrete(name ="") +
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.1,outlier.alpha = 0,fill="white")+
+  scale_y_continuous(name="",limits=c(-2.5,2.5))+
+  geom_hline(yintercept=0, linetype="dashed", color = "red")+
+  theme(axis.text.y = element_text(size = 6))
+
+pK<-ggdraw() +
+  draw_plot(pK1 + theme(legend.justification = "bottom"), 0, 0, 1, 1) +
+  draw_plot(pK2 + scale_color_viridis(discrete = TRUE) + 
+              theme(legend.justification = "top"), 0.5, 0.52, 0.5, 0.4)
+plot_grid(pB,p3,pK,ncol=3,labels = c("A","B","C"))
+
+```
+### background omega by subfamily
+```{r }
+backgroundOmegaSF<-data.frame(cbind(allRELAX$ToMean,as.character(allRELAX$sf)))
+colnames(backgroundOmegaSF)<-c("T","SF")
+backgroundOmegaSF$T<-as.numeric(as.character(backgroundOmegaSF$T))
+pBsf <- ggplot(backgroundOmegaSF, aes(x=SF, y=T,fill=SF)) + 
+  geom_violin(position = position_dodge(width =.1),lwd=.1) + 
+  theme(axis.text.x = element_text(angle = -45, hjust = 0)) + 
+  scale_y_continuous(name ="background omega") +
+  scale_x_discrete(name ="") +
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.5,outlier.alpha = 0,fill=rgb(1,1,1,.8))
+pBsf
+
+```
+```{r }
+backgroundKSF<-data.frame(cbind(allRELAX$klog2,as.character(allRELAX$sf)))
+colnames(backgroundKSF)<-c("T","SF")
+backgroundKSF$T<-as.numeric(as.character(backgroundKSF$T))
+backgroundKSF$T[!is.finite(backgroundKSF$T)]<- (-80)
+
+bksf2 <-
+  backgroundKSF %>%
+  group_by(SF) %>%
+  mutate(outlier = T > median(T) + IQR(T) * 1.5) %>%
+  mutate(outlier = T < median(T) - IQR(T) * 1.5) %>%
+  ungroup
+
+pKsf <- ggplot(bksf2, aes(x=SF, y=T,fill=SF)) + 
+  geom_violin(position = position_dodge(width =.1),lwd=.1) + 
+  theme(axis.text.x = element_text(angle = -45, hjust = 0)) + 
+  scale_y_continuous(name ="background omega") +
+  scale_x_discrete(name ="") +
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.5,outlier.shape = NA) +
+  geom_point(data = function(x) dplyr::filter_(x, ~ outlier), position = 'jitter',size=.4,aes(col=SF)) # Outliers
+
+pKsf
+
+#bksf2
+
+
+```
+```{r}
+colorTableSF<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/colorTableSF.tsv",sep="\t",header=T,stringsAsFactors = F)
+allRELAX2<-merge(allRELAX,colorTableSF,by.x="sf",by.y="sf",all.x=T)
+allRELAX2$klog2[!is.finite(allRELAX2$klog2)]<-(-80)
+plot(allRELAX2$klog2,cex=.5,pch=19,col=addalpha(allRELAX2$col,1),xaxt="n",xlab="",ylab="log2(k)",xlim=c(0,length(allRELAX2$klog2)+20))
+allRELAX2$index<-1:length(allRELAX2$OGid)
+lowK<-subset(allRELAX2,klog2 <= -20)
+text(x = (lowK$index+10),y=jitter(lowK$klog2),labels = gsub(".*Clade","c",lowK$OGid),cex=.7,srt=45,pos=3)
+tree
+```
+
+```{r}
+PARG1<-allRELAX[grep("Parg",allRELAX$testSet),]
+PARG0<-allRELAX[grep("Parg",allRELAX$testSet,invert = T),]
+boxplot(PARG1$ToMean,PARG0$ToMean,outline=F)
+boxplot(log(PARG1$To3,10),log(PARG0$To3,10),log(PARG1$Ro3,10),log(PARG0$Ro3,10),outline=F)
+boxplot(PARG1$ToMean,PARG0$ToMean,PARG1$RoMean,PARG0$RoMean,outline=F)
+perm.test(PARG1$ToMean,PARG0$ToMean,stat=median)
+```
+
+```{r}
+# ns
+perm.test(unlist(subset(allRELAX,sf=="9E",RoMean)),unlist(subset(allRELAX,sf!="9E",RoMean)),stat=median)
+# ns
+perm.test(allRELAX$RoMean,allRELAX$ToMean,stat=median,alternative="g",paired=T)
+boxplot(allRELAX$RoMean-allRELAX$ToMean,ylim=c(-.1,.1))
+boxplot(allRELAX$Ro3,allRELAX$To3,outline=F)
+perm.test(allRELAX$Ro3[is.finite(allRELAX$Ro3) & is.finite(allRELAX$To3)],allRELAX$To3[is.finite(allRELAX$Ro3) & is.finite(allRELAX$To3)],stat=median,paired=T)
+```
+```{r}
+# dNrate higher in test than in ref set
+plot(log(allRELAX$dNtest/allRELAX$dNref,2))
+```
+
+```{r}
+backgroundOmegaSF<-data.frame(cbind(log(allRELAX$dNtest/allRELAX$dNref,2),as.character(allRELAX$sf)))
+colnames(backgroundOmegaSF)<-c("T","SF")
+backgroundOmegaSF$T<-as.numeric(as.character(backgroundOmegaSF$T))
+pBdn <- ggplot(backgroundOmegaSF, aes(x=SF, y=T,fill=SF)) + 
+  geom_violin(position = position_dodge(width =.1),lwd=.1) + 
+  theme(axis.text.x = element_text(angle = -45, hjust = 0)) + 
+  scale_y_continuous(name ="log2(dNtest/dNref)") +
+  scale_x_discrete(name ="") +
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.5,outlier.alpha = 1,fill=rgb(1,1,1,.8))
+pBdn
+
+
+backgroundOmegaSF<-data.frame(cbind(allRELAX$klog2,as.character(allRELAX$sf)))
+colnames(backgroundOmegaSF)<-c("T","SF")
+backgroundOmegaSF$T<-as.numeric(as.character(backgroundOmegaSF$T))
+backgroundOmegaSF$T[!is.finite(backgroundOmegaSF$T)]<-(-90)
+pBsf <- ggplot(backgroundOmegaSF, aes(x=SF, y=T,fill=SF)) + 
+  geom_violin(position = position_dodge(width =.1),lwd=.1) + 
+  theme(axis.text.x = element_text(angle = -45, hjust = 0)) + 
+  scale_y_continuous(name ="log2(k)") +
+  scale_x_discrete(name ="") +
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.5,outlier.alpha = 1,fill=rgb(1,1,1,.8))
+pBsf
+
+
+```
+
+

@@ -1,0 +1,435 @@
+---
+title: "Inquiline Genomics: MRJP gene tree analysis and plot"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+# Load Environment
+## Load libraries
+
+```{r include=FALSE}
+######################
+# Load packages
+######################
+library("ape")
+library("Biostrings")
+library("ggplot2")
+library("ggtree")
+library("phytools")
+library("treeman")
+library(diversitree)
+library(phytools)
+library(geiger)
+library(cowplot)
+library(RColorBrewer)
+source("~/sciebo/librarySchrader.R")
+library(gplots)
+library(randomcoloR)
+library(data.table)
+```
+
+#Load rerooted tree
+```{r}
+############################################
+# Load rerooted RaxML tree
+############################################
+t1<-read.tree("~/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/FigtreeRooted.bipartitions.nwk")
+tree <- as(t1, 'TreeMan')
+t0<-t1
+```
+## Load some assignment details 
+```{r}
+############################################
+# Load subfam assignments
+############################################
+subfam<-read.table("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/MRJPs.details.tsv",sep="\t")
+```
+
+# clean-up MRJP tree
+```{r}
+############################################
+# Rename Amel genes where necessary
+############################################
+old<-c("LOC413379","LOC413380","LOC724293","LOC726274","Mrjp3","Mrjp5","Mrjp6","Mrjp4","Mrjp7","Mrjp1","LOC102654393","Mrjp2","Mrjp8","Mrjp9","Y-e3","LOC727110","Y-y","Y-h","LOC113218568","Y-f")
+new<-c("Y-g1"     ,"Y-g2"     ,"Y-x1"     ,"Y-e1"     ,"Mrjp3","Mrjp5","Mrjp6","Mrjp4","Mrjp7","Mrjp1","Mrjp2-like"  ,"Mrjp2","Mrjp8","Mrjp9","Y-e3","Y-x2"     ,"Y-y","Y-h","Y-like","Y-f")
+for (i in 1:length(old)){
+  t1$tip.label[t1$tip.label==old[i]]<-new[i]
+}
+
+############################################
+# Rename yellow genes in ants according to Amel genes
+############################################
+
+overview<-list()
+for (query in c("Y-h","Y-y","Y-g1","Y-g2","Y-f","Y-e1","Y-x2","Y-e3","Y-like","Y-x1")){
+  t2 <- as(t1, 'TreeMan')
+  sis<-getNdSstr(t2,query)
+  childs<-getNdKids(t2,sis)
+  renaming<-gsub(x=childs,pattern = "(....).*",paste("\\1",query,sep="-"),perl=T)
+  renaming[duplicated(renaming)]<-paste(renaming[duplicated(renaming)],"b",sep="")
+  renaming[duplicated(renaming)]<-paste(gsub(".$","",renaming[duplicated(renaming)]),"c",sep="")
+  renaming[duplicated(renaming)]<-paste(gsub(".$","",renaming[duplicated(renaming)]),"d",sep="")
+  t1$tip.label[t1$tip.label %in% childs]<-renaming
+  overview[[query]]<-data.frame(childs,gsub(x=childs,pattern = "(....).*",paste("\\1",query,sep="-"),perl=T))
+  colnames(overview[[query]])<-c("original","new")
+}
+
+overviewTable<-do.call(rbind,overview)
+############################################
+# Rename MRJP-15 clade to Y-g3
+############################################
+t2 <- as(t1, 'TreeMan')
+nds<-getNdPrids(t2,"Acep-MRJP-16")
+childs<-getNdKids(t2,nds[2])
+t1$tip.label[t1$tip.label %in% childs]<-gsub(x=childs,pattern="(....).*","\\1-Y-g3",perl=T)
+
+
+```
+
+### rename tip labels
+```{r}
+t1$tip.label[grep("Aech|Parg|Acha|Ahey|Acol|Acep|Ains",t1$tip.label,invert=T)]<-paste("Amel",t1$tip.label[grep("Aech|Parg|Acha|Ahey|Acol|Acep|Ains",t1$tip.label,invert=T)],sep="-")
+```
+
+### Define clades (min size 5)
+```{r}
+cladesTree<-getCladesofSize(t1,5)
+
+# generate overview dataframe
+tipList<-lapply(cladesTree, function(x) x$tip.label)
+names(tipList)<-unlist(lapply(tipList,function(x) gsub(pattern = "^....-",replacement = "",x=x[1],perl=T)))
+
+tipDF<-stack(tipList)
+
+```
+
+### create annotations and rename some genes
+```{r}
+colnames(tipDF)<-c("gene","clade")
+# rename levels
+tipDF$clade<-plyr::revalue(tipDF$clade, c("Mrjp9"="A. mellifera MRJPs", "MRJP-18"="Mrjp01", "MRJP-10"="Mrjp02", "MRJP-03"="Mrjp03", "MRJP-05"="Mrjp04", "MRJP-24"="Mrjp05", "MRJP-06"="Mrjp06", "MRJP-21"="Mrjp07", "MRJP-27"="Mrjp08","MRJP-30"="Mrjp09"))
+```
+
+### rename duplicates
+```{r}
+#rename duplicates
+tipDF$gene[duplicated(tipDF$gene)]<-paste(tipDF$gene[duplicated(tipDF$gene)],"b",sep="-")
+tipDF$gene[duplicated(tipDF$gene)]<-paste(tipDF$gene[duplicated(tipDF$gene)],"c",sep="-")
+tipDF$gene[duplicated(tipDF$gene)]
+```
+
+
+
+## Add species metadata to tree
+```{r}
+tipDF2<-tipDF
+tipDF2$species<-substr(1,4,x=as.character(tipDF2$gene))
+tipDF2$type<-"Atta"
+tipDF2$type[grep("Amel",tipDF2$species,perl=T)]<-"Apis"
+tipDF2$type[grep("Ahey|Aech",tipDF2$species,perl=T)]<-"Acromyrmex"
+tipDF2$type[grep("Acha|Ains|Parg",tipDF2$species,perl=T)]<-"inquiline"
+tipDF2$type<-as.factor(tipDF2$type)
+subfamList<-unstack(tipDF2[,c("gene","type")])
+t1 <- ggtree::groupOTU(t1, subfamList, overlap='abandon')
+levels(attributes(t1)$group)
+```
+
+## rename all genes based on clade
+```{r}
+tipDF2$newName<-apply(cbind(tipDF2$species,as.character(tipDF2$clade)),1,paste,collapse="-")
+tmp<-data.frame(cbind(t1$tip.label,t0$tip.label))
+colnames(tmp)<-c("new","old")
+tipDF2<-merge(tmp,tipDF2,by.x="new",by.y="gene",all.x=T,all.y=T)
+tipDF2<-tipDF2[match(t1$tip.label, tipDF2$new),]
+tipDF2$newName[tipDF2$newName=="Amel-A. mellifera MRJPs"]<-as.character(tipDF2$new[tipDF2$newName=="Amel-A. mellifera MRJPs"])
+#t1$tip.label<-tipDF2$newName
+
+```
+
+### plot clade sizes
+```{r}
+tipList<-split(tipDF2[,c("new")],f=tipDF2$clade)
+cladeSizes<-lapply(tipList, length)
+cladeSizesTab<-do.call(rbind,cladeSizes)
+plot(cladeSizesTab,cex=.8,pch=19,col=addalpha(goodCols[1],.8))
+abline(h=8,col="red",lwd=2,lty=2)
+cladeSummary<-lapply(tipList, function(x) summary(as.factor(substr(x,1,4))))
+cladeTable<-plyr::ldply(cladeSummary, rbind)
+cladeTable[is.na(cladeTable)] <- 0
+```
+
+## Plot heatmap of gene copies in clades vs species
+```{r}
+cladeMatrixLC<-cladeTable[,c("Aech","Ains","Parg","Ahey","Acha","Acol","Acep","Amel")]
+row.names(cladeMatrixLC)<-cladeTable$.id 
+cladeMatrixLC2<-cladeMatrixLC[apply(cladeMatrixLC, 1, var) != -1, ]
+color.palette  <- colorRampPalette(c(goodCols[5],goodCols[1]))(n=10)
+heatmap.2(as.matrix(cladeMatrixLC2), col = color.palette,scale="none",trace="none",key.title = "",key.par=list(mar=c(3.5,1,.1,.1)),key.xlab = "copies in clade")
+
+dev.print(pdf,"~/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/MRJP.heatmap.pdf",width=4,height=7)
+```
+
+# Generate trait data for genes & clades
+```{r}
+############################################
+# Generate traits
+############################################
+
+smallerCladesTrait<-rep(0,length(t1$tip.label))
+names(smallerCladesTrait)<-t1$tip.label
+
+## Tier 1: clade evolution
+## level 1: All clades decreased in one parasite
+# level 1a: All clades decreased in Parg relative to Ahey
+smallerClades1a<-as.numeric(row.names(subset(cladeTable,(Parg<Ahey   & Ahey <= Aech))))
+smallerClades1aTree<-cladesTree[smallerClades1a]
+smallerClades1aTips<-unlist(lapply(smallerClades1aTree, function(x) x$tip.label))
+
+# level 1b: All decreased in Acha relative to Ahey 
+smallerClades1b<-as.numeric(row.names(subset(cladeTable,(Ahey <= Aech & Acha<Ahey))))
+smallerClades1bTree<-cladesTree[smallerClades1b]
+smallerClades1bTips<-unlist(lapply(smallerClades1bTree, function(x) x$tip.label))
+
+# level 1c: All decreased in Ains relative to Aech
+smallerClades1c<-as.numeric(row.names(subset(cladeTable,(Ains<Aech   & Aech <= Ahey))))
+smallerClades1cTree<-cladesTree[smallerClades1c]
+smallerClades1cTips<-unlist(lapply(smallerClades1cTree, function(x) x$tip.label))
+
+# level 2: Decreases in two parasites
+# level 2a: All decreased in Ains & Parg
+smallerClades2a<-as.numeric(row.names(subset(cladeTable,(Parg<Ahey) & (Ains<Aech) & (Acha>=Ahey))))
+smallerClades2aTree<-cladesTree[smallerClades2a]
+smallerClades2aTips<-unlist(lapply(smallerClades2aTree, function(x) x$tip.label))
+
+# level 2b: All decreased in Ains & Acha
+smallerClades2b<-as.numeric(row.names(subset(cladeTable,(Acha<Ahey) & (Ains<Aech) & (Parg>=Ahey))))
+smallerClades2bTree<-cladesTree[smallerClades2b]
+smallerClades2bTips<-unlist(lapply(smallerClades2bTree, function(x) x$tip.label))
+
+# level 2c: All decreased in Parg & Acha (& Ahey >=Aech)
+smallerClades2c<-as.numeric(row.names(subset(cladeTable,(Acha<Ahey) & (Parg<Ahey) & (Ahey<=Aech))))
+smallerClades2cTree<-cladesTree[smallerClades2c]
+smallerClades2cTips<-unlist(lapply(smallerClades2cTree, function(x) x$tip.label))
+
+# level 3:  All clades decreased in all 3 parasites
+smallerClades3<-as.numeric(row.names(subset(cladeTable,Parg<Ahey & Acha<Ahey & Ains<Aech)))
+smallerClades3Tree<-cladesTree[smallerClades3]
+smallerClades3Tips<-unlist(lapply(smallerClades3Tree, function(x) x$tip.label))
+
+# finalize trait data frame
+smallerCladesTrait[smallerClades1aTips]<-"Parg"
+smallerCladesTrait[smallerClades1bTips]<-"Acha"
+smallerCladesTrait[smallerClades1cTips]<-"Ains"
+smallerCladesTrait[smallerClades2aTips]<-"Parg/Ains"
+smallerCladesTrait[smallerClades2bTips]<-"Acha/Ains"
+smallerCladesTrait[smallerClades2cTips]<-"Parg/Acha"
+smallerCladesTrait[smallerClades3Tips]<-"Parg/Ains/Acha"
+
+smallerCladesTrait<-smallerCladesTrait[t1$tip.label]
+smallerCladesTrait<-as.factor(smallerCladesTrait)
+
+# level 1:  Species "type"
+subfamTrait<-as.factor(tipDF2$type)
+names(subfamTrait)<-tipDF2$new
+
+```
+
+
+## create color vectors for all trait data
+```{r}
+n <- length(levels(tipDF2$clade))
+n2 <- length(levels(smallerCladesTrait))
+n4 <- length(levels(attributes(t1)$group))
+
+qual_col_pals <- brewer.pal.info[brewer.pal.info$category == 'qual',]
+#col_vector <- unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))[1:n]
+
+# subfamilies or clades
+col_vector <- c(addalpha(goodCols[1],.3),addalpha(goodCols[4],.3),addalpha(goodCols[2],.3),addalpha(goodCols[3],.6))
+# parasite losses
+fc<-colorRampPalette(c("#FFCCCC", goodCols[8]))
+col_vector2 <- c("gray90",fc(n2-1))
+#col_vector2 <- c("black")
+#plot(1:10,1:10,pch=19,col=col_vector2,cex=5)
+
+# branch coloring
+col_vector4 <- rep("black",(n4+1))
+
+```
+
+## prepare tree with 2 outside heatmaps
+```{r}
+### 2 outline circles
+circ <- ggtree(t1,size=.2, layout = "circular",ladderize = T,right = T,mapping = aes(color = group)) + scale_color_manual(name = 'group',values = col_vector4) 
+
+
+# 1st tier: species
+p1 <- gheatmap(circ, data.frame(subfamTrait), offset=0.95, width=.02,
+               colnames_angle=90, colnames_offset_y = 0.5,color = NA,colnames = F)
+# 2nd tier: Clades changing in parasites
+p2 <- gheatmap(p1, data.frame(smallerCladesTrait), offset=.8, width=.02,
+               colnames_angle=90, colnames_offset_y = .5,color = NA,colnames = F)
+
+col <- c(col_vector, col_vector2)
+names(col) = c(levels(subfamTrait), levels(smallerCladesTrait))
+
+# changed to third tier
+pp <- p2 + scale_fill_manual(values=col)
+
+
+p1x <- p1 + scale_fill_manual(values=col)
+p2x <- gheatmap(circ, data.frame(smallerCladesTrait), offset=.15, width=.02,color = NA) +
+    scale_fill_manual(values=col) 
+
+# third tier 
+#p3x <- gheatmap(circ, data.frame(lcCladesTrait), offset=0, width=.02,color = NA) +
+#    scale_fill_manual(values=col) 
+
+leg1 <- get_legend(p1x)
+leg2 <- get_legend(p2x)
+#leg3 <- get_legend(p3x)
+
+pp <- pp + theme(legend.position="none") 
+```
+
+
+
+## plot simple tree
+```{r}
+
+#pdf("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/ggORtreeClean.pdf",width=20,height=20)
+#plot_grid(pp, leg1, leg2, leg3, ncol=4, rel_widths=c(1, .1, .1,.1))
+
+plot_grid(leg1,leg2, ncol=4)
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/MRJPs.legend.pdf",width=10,height=10)
+#dev.off()
+#pp
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/ggORtreeClean.pdf",width=10,height=10)
+
+```
+
+## add clade info to clades in ggtree object
+```{r}
+pp2 <- pp %<+% tipDF2
+tree_dt <- data.table(pp2$data)
+
+
+# select only the tip labels and order by coord y
+tree_dt <- tree_dt[isTip == TRUE][order(y)]
+
+# Make table with y cords for each group in consecutive order; 
+# this helps for drawing & labeling segments.
+# Note the usage of "rleid" function, which is a grouping ID generator,
+# needed because consecutive rows of an identical reoccurring group must form a unique group.
+coord_groups <- tree_dt[, .(y1 = y[1],
+                            y2 = y[.N],
+                            angle = mean(angle),
+                            n = .N), # optional - helps with counting
+                        by = .(clade, 
+                               id_gr = rleid(clade, 
+                                             prefix = "cld"))]
+coord_groups
+
+
+# Compute the middle y - will be used for placing the group label;
+# similarly the mean angle was computed above already. 
+coord_groups[, y_mid := rowMeans(.SD), .SDcols = c("y1", "y2")]
+
+# For one-record groups where y1=y2, adjust their y coordinates so that a segment gets drawn;
+# If not, no segment get drawn for such cases.
+# To force a segment add and subtract a small amount (try & error until seems ok). 
+# Prefer a smaller values since with bigger ones you risk to exaggerate the segments.
+coord_groups[, y1_adj := ifelse(y1 == y2, y1 - 0.1, y1)]
+coord_groups[, y2_adj := ifelse(y1 == y2, y2 + 0.1, y2)]
+
+# Labels need angle adjustment for cases between 90 and 270 dg
+coord_groups[, angle_adj := ifelse(angle %between% c(90, 180), 
+                                   yes = angle + 180,
+                                   no = ifelse(angle > 180 & angle <= 270,
+                                               yes = angle - 180,
+                                               no = angle))]
+
+# Labels with angles between 90 and 270 dg
+# need change of horizontal adjustment argument from 0 to 1.
+coord_groups[, hjust_adj := ifelse(angle %between% c(90, 270), yes = 1L, no = 0L)]
+
+# if needed, coloring could be binary 
+coord_groups[, col := ifelse(.I%%2, 0.35, 1)]
+coord_groups
+
+
+# Define variable to control x coordinate of segments & labels
+my_x <- max(tree_dt$x) + 0.95
+
+tree_labeled <- 
+  pp2 + 
+  # Add line segments for each group.
+  geom_segment(data = coord_groups,
+               aes(x = my_x, 
+                   y = y1_adj, 
+                   xend = my_x, 
+                   yend = y2_adj),
+               color = rgb(.5,.5,.5,.5),
+               lineend = "butt",
+               size = 1.2) +
+  # Add text group labels at the middle of each segment.
+  geom_text(data = coord_groups,
+            aes(x = my_x+0.01,
+                y = y_mid,
+                angle = angle_adj,
+                hjust = hjust_adj,
+                label = clade),
+            vjust = 0.5, 
+            size  = 4,
+            nudge_x = 0.2, # Offsetting label from its default x coordinate.
+            color = "black")
+```
+
+# Plot final tree
+```{r}
+#tree_labeled$data$label<-tree_labeled$data$newName
+tree_labeled+ geom_tiplab2(size=2, aes(angle=angle,label=newName),align=T,linesize=.1,linetype = "dashed", color="gray90") + geom_tiplab2(size=2, aes(angle=angle,label=newName),align=T,linesize=0,linetype = NA, color="black")
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/MRJPs.tree.pdf",width=10,height=10)
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.labeled.small.pdf",width=5.5,height=5.5)
+```
+# Save relevant objects
+```{r}
+dfSC<-data.frame(smallerCladesTrait)
+tipDF4<-merge(tipDF2,dfSC,by.x="new",by.y="row.names")
+
+# save some things
+save(cladesTree,file="/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/MRJP.labeled.tree.Robject")
+write.table(tipDF4,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/MRJP.tipsDF4.tsv",quote=F,sep="\t",row.names = F)
+write.table(tree_dt,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/MRJP.tree_dt.tsv",quote=F,sep="\t",row.names = F)
+write.table(cladeTable,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/MRJP.cladeTable.tsv",sep="\t",quote = F,row.names=F)
+```

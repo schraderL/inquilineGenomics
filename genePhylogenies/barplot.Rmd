@@ -1,0 +1,71 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+require(reshape2)
+library(ggplot2)
+```
+
+```{r}
+OR<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/annotationTable2.tsv",sep="\t")
+colorTab<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/colorTableSF.tsv",sep="\t")
+
+OR$species<-row.names(OR)
+OR<-melt(OR, id = "species")
+colnames(OR)<-c("subfamily","species","count")
+# Stacked
+ggplot(OR, aes(fill=subfamily, y=count, x=species)) +
+    geom_bar( stat="identity")
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/barplot.pdf")
+```
+
+```{r}
+MRJP<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/Ants.MRJP-yellow.cladeTable.tsv",sep="\t")
+
+MRJP<-melt(MRJP, id = "clade")
+colnames(MRJP)<-c("subfamily","species","count")
+# Stacked
+ggplot(MRJP, aes(fill=subfamily, y=count, x=species)) + 
+    geom_bar( stat="identity")
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/barplot.pdf")
+```
+
+```{r}
+data<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/ELONGASEevolution/ELG.cladeTable.tsv",sep="\t")
+
+data<-melt(data, id = ".id")
+colnames(data)<-c("subfamily","species","count")
+# Stacked
+ggplot(data, aes(fill=subfamily, y=count, x=species)) + 
+    geom_bar( stat="identity")
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/ELONGASEevolution/barplot.pdf",width=4,height=4)
+```
+
+```{r}
+data<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/GRevolution/GRs.cladeTable.tsv",sep="\t")
+
+data<-melt(data, id = ".id")
+colnames(data)<-c("subfamily","species","count")
+# Stacked
+ggplot(data, aes(fill=subfamily, y=count, x=species)) + 
+    geom_bar( stat="identity")
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/GRevolution/barplot.pdf",width=4,height=4)
+```
+
+
+```{r}
+data<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/CPRevolution/CPR.cladeTable.tsv",sep="\t")
+
+data<-melt(data, id = ".id")
+colnames(data)<-c("subfamily","species","count")
+# Stacked
+ggplot(data, aes(fill=subfamily, y=count, x=species)) + 
+    geom_bar( stat="identity")
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/CPRevolution/barplot.pdf",width=4,height=4)
+```

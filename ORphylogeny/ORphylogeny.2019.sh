@@ -127,3 +127,6 @@ cd $base/results/aln/subfamilyTree/raxml
 
 nice raxmlHPC-PTHREADS -f a -m PROTGAMMALG -p 12345 -x 12345 -# autoMRE -s ../merge.ORsubfam.aln -n r1 -T 20
 #sequence duplicates and undetermined columns removed is printed to file ../merge.ORsubfam.aln.reduced
+nice raxmlHPC -m PROTGAMMALG -p 12345 -# 20 -s ../merge.ORsubfam.aln -n MLtree -T 20
+nice raxmlHPC-PTHREADS -f a -m PROTGAMMALG -p 12345 -x 12345 -# autoMRE -s ../merge.ORsubfam.aln -n r1 -T 20
+nice raxmlHPC-PTHREADS -f a -m PROTGAMMALG -p 12345 -x 12345 -# 100 -s ../merge.ORsubfam.aln -n r2 -T 20

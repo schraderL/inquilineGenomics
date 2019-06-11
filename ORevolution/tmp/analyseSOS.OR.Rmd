@@ -1,5 +1,5 @@
 ---
-title: "Inquiline Genomics: analysis and summary of RELAX (results3)"
+title: "Inquiline Genomics: analysis and summary of RELAX (full model) on ORs"
 output:
   html_document:
     toc: true
@@ -39,12 +39,14 @@ We tested for relaxed selection in any social parasite branch.
 
 # Input data 
 ### Load environment
+
 ```{r}
 #install.packages("rjson")
 library("rjson")
 library(plyr)
 library(tidyr)
 library(ggplot2)
+library(ape)
 ```
 
 ### Locate data
@@ -52,7 +54,7 @@ library(ggplot2)
 
 
 # All parasite branches vs hosts & internal Acromyrmex branches (A1 & A2), Full Model
-folder<-"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/results3/"
+folder<-"~/sciebo/inquilineGenomics18/ORevolution/OR.SOS/RELAXall/"
 
 files<-dir(folder,pattern =".json")
 ```
@@ -80,7 +82,7 @@ for (q in 1:length(files)){
   dNtest[q]<-result$fits$`MG94xREV with separate rates for branch sets`$`Rate Distributions`[[2]][[1]][1]
   branchNames[[q]]<-names(result$`branch attributes`$`0`)
 }  
-
+names(results)<-unlist(lapply(results,function(x) gsub(".*/","",x$input$`file name`)))
 #result$fits$`RELAX null`$`Rate Distributions`$Test
 #result$fits$`RELAX null`$`Rate Distributions`$Reference
 # branch names
@@ -91,7 +93,9 @@ for (q in 1:length(files)){
 # get k
 #results[[1]]$`branch attributes`$`0`$P1$`k (general descriptive)`
 
-splitResults<-lapply(results, function(x) x$`branch attributes`$`0`) 
+splitResults<-lapply(results, function(x) x$`branch attributes`$`0`)
+byClade<-lapply(splitResults, function(x) unlist(lapply(x,function(p) p$`k (general descriptive)` )))
+names(byClade)<-unlist(lapply(results,function(x) gsub(".*/","",x$input$`file name`)))
 branchK<-unlist(lapply(splitResults, function(x) unlist(lapply(x,function(p) p$`k (general descriptive)` ))))
 names(branchK)<-substr(names(branchK),1,4)
 bdf<-data.frame(log(branchK,2))
@@ -107,27 +111,23 @@ median(bdfL[[9]]$branchK)
 
 
 ```
-```{r fig.height=4, fig.width=5}
-source("~/sciebo/librarySchrader.R")
-plot(density(bdfL[[1]]$branchK),col=1,ylim=c(0,.4))
-for(i in 2:9){
-points(density(bdfL[[i]]$branchK),col=goodCols[i],type="l")
-text(x = -30,y=.15*(i/4),names(bdfL)[i],col=goodCols[i])
-}
-
-abline(v=0,lwd=1,col="red",lty=2)
+```{r}
+# K distribution
+pK1 <- ggplot(bdf, aes(x=branch,y=branchK,fill=branch)) + 
+  geom_violin() +
+  scale_x_discrete(name ="") +
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.1,outlier.alpha = 0,fill="white")+
+  scale_y_continuous(name="log2(k)",limits=c(-1,1))+
+  geom_hline(yintercept=0, linetype="dashed", color = "red")
+pK1
 ```
 
 ```{r}
-
-pA <- ggplot(bdf, aes(x=branch, y=branchK,fill=branch)) + 
-  geom_violin() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
-  scale_y_continuous(name ="branch K",limit=c(-5,5)) +
-  scale_x_discrete(name ="") +
-  scale_fill_manual(values=goodCols[c(1:9)]) +  
-  guides(fill=FALSE)+
-  geom_boxplot(width=0.3,outlier.alpha = 0,fill=rgb(1,1,1,1))
-pA
+par(mai=c(1,2,0,0))
+par(mfrow=c(2,1))
+plot(read.tree(text=tree))
+tree<-paste(results[["9E-Clade-096.aln"]]$input$trees$`0`,";",sep="")
+barplot(log(byClade[["9E-Clade-096.aln"]],2),las=2,horiz=T)
 ```
 

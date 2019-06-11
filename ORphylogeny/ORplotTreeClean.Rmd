@@ -41,6 +41,7 @@ output:
 ######################
 # Load packages
 ######################
+#source("~/sciebo/librarySchrader.R")
 library("ape")
 library("Biostrings")
 library("ggplot2")
@@ -52,7 +53,7 @@ library(phytools)
 library(geiger)
 library(cowplot)
 library(RColorBrewer)
-source("~/sciebo/librarySchrader.R")
+
 library(gplots)
 library(randomcoloR)
 library(data.table)
@@ -538,5 +539,23 @@ save(cladesTree,file="/Users/lukas/sciebo/inquilineGenomics18/ORevolution/result
 save(tree_dt,file="/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/tree_dt.Robject")
 write.table(tipDF4,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/tipsDF4.tsv",quote=F,sep="\t",row.names = F)
 write.table(tree_dt,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/tree_dt.tsv",quote=F,sep="\t",row.names = F)
+```
+### overview by clade
+```{r}
+tmp<-split(tipDF4,f = tipDF4$clade)
+tmp2<-data.frame(as.character(unlist(lapply(tmp,function(x) unique(x$subfamily)))))
+tmp2$clade<-sprintf("%03d", as.numeric(row.names(tmp2)))
+colnames(tmp2)[1]<-"sf"
+tmp3<-merge(cladeTable,tmp2,all.x=T,by.x=".id",by.y="clade")
+colnames(tmp3)[1]<-"clade"
+write.table(tmp3,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/cladeTable.tsv",sep="\t",quote = F,row.names=F)
+
+```
+
+```{r}
+colorTableSF<-data.frame(cbind(as.character(coord_groups2$group),col_vector5))
+colnames(colorTableSF)<-c("sf","col")
+write.table(colorTableSF,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/colorTableSF.tsv",sep="\t",quote = F,row.names = F)
+
 ```
 

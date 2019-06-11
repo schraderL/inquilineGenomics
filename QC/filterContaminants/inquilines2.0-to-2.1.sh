@@ -22,10 +22,10 @@ AheyG="~/data/genomes/inquilines/v1.1/Ahey/Acromyrmex_heyeri.fa"
 AinsG="~/data/genomes/inquilines/v1.1/Ains/Acromyrmex_insinuator.fa"
 PargG="~/data/genomes/inquilines/v1.1/Parg/Pseudoatta_argentina.fa"
 
-#blastn -query $AchaG -db $base/blastDB/nt -num_threads 20 -evalue 1e-10 -num_alignments 1 -outfmt 6 > $base/blsResults/Acha.blast.tsv
-#blastn -query $AheyG -db $base/blastDB/nt -num_threads 20 -evalue 1e-10 -num_alignments 1 -outfmt 6 > $base/blsResults/Ahey.blast.tsv
-#blastn -query $AinsG -db $base/blastDB/nt -num_threads 20 -evalue 1e-10 -num_alignments 1 -outfmt 6 > $base/blsResults/Ains.blast.tsv
-#blastn -query $PargG -db $base/blastDB/nt -num_threads 20 -evalue 1e-10 -num_alignments 1 -outfmt 6 > $base/blsResults/Parg.blast.tsv
+blastn -query $AchaG -db $base/blastDB/nt -num_threads 20 -evalue 1e-10 -num_alignments 1 -outfmt 6 > $base/blsResults/Acha.blast.tsv
+blastn -query $AheyG -db $base/blastDB/nt -num_threads 20 -evalue 1e-10 -num_alignments 1 -outfmt 6 > $base/blsResults/Ahey.blast.tsv
+blastn -query $AinsG -db $base/blastDB/nt -num_threads 20 -evalue 1e-10 -num_alignments 1 -outfmt 6 > $base/blsResults/Ains.blast.tsv
+blastn -query $PargG -db $base/blastDB/nt -num_threads 20 -evalue 1e-10 -num_alignments 1 -outfmt 6 > $base/blsResults/Parg.blast.tsv
 
 #######################################
 
@@ -248,7 +248,7 @@ do
 
 #######################################
   # remove repeat annotations of contaminating scaffolds.
-  cat $speciesName.contaminants.lst|perl -pe 's/^(.*)$/^$1\t/g'|egrep -f - ${Data["repGff"]} > annotation/repeat_annotation/$speciesName.v2.1.repeats.gff3
+  cat $speciesName.contaminants.lst|perl -pe 's/^(.*)$/^$1\t/g'|egrep -v -f - ${Data["repGff"]} > annotation/repeat_annotation/$speciesName.v2.1.repeats.gff3
 #######################################
 
 #######################################

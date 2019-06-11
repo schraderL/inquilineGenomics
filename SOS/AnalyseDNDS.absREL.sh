@@ -169,6 +169,11 @@ ls $base/prank/cds/*.aln.fa|rev|cut -f 1 -d "/"|rev|cut -f 1 -d "."|parallel --n
 ls $base/prank/cds/*.aln.fa|rev|cut -f 1 -d "/"|rev|cut -f 1 -d "."|parallel --nice 10 "ln -s $base/prank/cds/{}.cds.aln.fa $base/absREL/{/}/{}.aln"
 # started April 12, 12:16
 ls $base/prank/cds/*.aln.fa|rev|cut -f 1 -d "/"|rev|cut -f 1 -d "."|parallel --nice 10 "HYPHYMP LIBPATH=$HMdir/res/ $bf 'Universal' '$base/absREL/{/}/{}.aln' '$base/prank/guidetrees/{/}.pep.tre' 'All' '$base/absREL/{/}/{}.absREL.out'"
+# rerun those that were missed in the first iteration
+ls $base/absREL/|parallel --nice 10 '[[ -f {}/{}.aln.ABSREL.json ]] || echo "{}"' > ../absREL.rerun.lst
+cat ../absREL.rerun.lst|parallel  --nice 10 "HYPHYMP LIBPATH=$HMdir/res/ $bf 'Universal' '$base/absREL/{/}/{}.aln' '$base/prank/guidetrees/{/}.pep.tre' 'All' '$base/absREL/{/}/{}.absREL.out'"
+ls $base/absREL/|parallel --nice 10 '[[ -f {}/{}.aln.ABSREL.json ]] || echo "{}"' > ../absREL2.rerun.lst
+cat ../absREL2.rerun.lst|parallel  --nice 10 "HYPHYMP LIBPATH=$HMdir/res/ $bf 'Universal' '$base/absREL/{/}/{}.aln' '$base/prank/guidetrees/{/}.pep.tre' 'All' '$base/absREL/{/}/{}.absREL.out'"
 
 # Generates HYPHY commands:
 #HYPHYMP
