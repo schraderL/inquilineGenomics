@@ -104,6 +104,7 @@ ls $base/ORs/Parg/final/finalSet
 #####################
 
 ./ORphylogeny/ORphylogeny.trimal.sh
+./ORphylogeny/ORplotTreeClean.Rmd
 
 #####################
 # MRJP phylogeny
@@ -140,3 +141,9 @@ ls $base/ORs/Parg/final/finalSet
 #####################
 
 ./WGA/run.progressiveCactus.sh
+
+#####################
+# Signatures of Selection
+#####################
+
+./SOS/AnalyseDNDS.absREL.sh

@@ -1,0 +1,220 @@
+---
+title: "Inquiline Genomics: WGA analysis of mutations"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+```{r}
+source("~/sciebo/librarySchrader.R")
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(RColorBrewer)
+library(gplots)
+library(ape)
+library(ggtree)
+library(ggimage)
+library(phylobase)
+require(cowplot)
+library(viridis)
+library(grid)
+
+
+```
+
+```{r}
+
+relative<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/WGA/results/relative.mutations.attines.tsv",sep="\t")
+
+#(((AHEY:0.024983,(ACHA:0.016335,PARG:0.016335)Anc09:0.008648)Anc07:0.027567,(AECH:0.009605,AINS:0.009605)Anc08:0.042945)Anc05:0.065115,(ACEP:0.020492,ACOL:0.020492)Anc06:0.097173)Anc04;
+row.names(relative)[row.names(relative)=="Anc04"]<-"N1"
+row.names(relative)[row.names(relative)=="Anc06"]<-"N2"
+row.names(relative)[row.names(relative)=="Anc05"]<-"N3"
+row.names(relative)[row.names(relative)=="Anc07"]<-"N4"
+row.names(relative)[row.names(relative)=="Anc09"]<-"N5"
+row.names(relative)[row.names(relative)=="Anc08"]<-"N6"
+row.names(relative)[row.names(relative)=="ACEP"]<-"Acep"
+row.names(relative)[row.names(relative)=="ACOL"]<-"Acol"
+row.names(relative)[row.names(relative)=="AECH"]<-"Aech"
+row.names(relative)[row.names(relative)=="AINS"]<-"Ains"
+row.names(relative)[row.names(relative)=="ACHA"]<-"Acha"
+row.names(relative)[row.names(relative)=="AHEY"]<-"Ahey"
+row.names(relative)[row.names(relative)=="PARG"]<-"Parg"
+
+tr<-read.tree(text="(((Ahey:0.024983,(Acha:0.016335,Parg:0.016335)Anc09:0.008648)Anc07:0.027567,(Aech:0.009605,Ains:0.009605)Anc08:0.042945)Anc05:0.065115,(Acep:0.020492,Acol:0.020492)Anc06:0.097173)Anc04;")
+tr$node.label[tr$node.label=="Anc04"]<-"N1"
+tr$node.label[tr$node.label=="Anc06"]<-"N2"
+tr$node.label[tr$node.label=="Anc05"]<-"N3"
+tr$node.label[tr$node.label=="Anc07"]<-"N4"
+tr$node.label[tr$node.label=="Anc09"]<-"N5"
+tr$node.label[tr$node.label=="Anc08"]<-"N6"
+
+
+bySpecies<-data.frame(t(relative))
+stackRelative<-stack(relative)
+stackRelative$species<-rep(rownames(relative),length=nrow(stackRelative))
+colnames(stackRelative)<-c("rate","type","branch")
+stackRelative<-subset(stackRelative,type!="total")
+relative
+
+
+
+plot(tr)
+nodelabels(tr$node.label)
+
+```
+
+```{r}
+p <- ggtree(tr) + geom_tiplab() 
+ 
+## input data should have a column of `node` that store the node number
+
+relativeTree<-merge(p$data,relative,by.x="label",by.y="row.names")
+
+p<-ggtree(tr,ladderize=T,right=T,size=2.2,lineend='square') %<+% relativeTree
+color.palette<-viridis(50)
+colorScale<-scale_color_continuous(low=goodCols[1],high = goodCols[5])
+colorScale<-scale_color_viridis()
+  p<-p+geom_tiplab(size=2.5,color=1,offset=.005,fontface = "italic") + geom_rootedge(0.009,size=2.2,col="gray70")+ xlim(-0.01, .14) +colorScale + geom_nodepoint(color="black", alpha=1, size=4) +geom_nodepoint(color="white", alpha=1, size=3.4) + geom_nodelab(aes(label=label), hjust=.5,color=1,size=2,fontface = "bold") 
+pV<-p+ aes(color=Inv) 
+pP<-p+ aes(color=Tra)
+pD<-p+ aes(color=Del)
+pU<-p+ aes(color=Dup)
+pI<-p+ aes(color=Ins)
+#plot_grid(pV,pP,pD,pU,pI, labels = "AUTO", ncol = 3, align = 'v')
+
+colorScaleBP<-scale_color_gradient(low=goodCols[1], high=goodCols[5],aesthetics = "fill") 
+colorScaleBP<-scale_color_viridis(aesthetics = "fill") 
+stackRelative$branch<-as.factor(stackRelative$branch)
+
+stackRelative$branch<- factor(stackRelative$branch, levels = c("Acha","Parg","N5","Ahey","N4","Ains","Aech","N6","N3","Acol","Acep","N2","N1"))
+
+
+
+pBPinv <-ggplot(subset(stackRelative,type=="Inv",color=NA),  aes(branch, rate)) +geom_bar(stat = "identity") + aes(fill=rate) + theme(legend.position = 'none') + theme(axis.text.y = element_text(angle = 0,size=4,hjust=1),axis.text.x=element_text(size=5),axis.title = element_blank()) + colorScaleBP +   coord_flip() 
+pBPtra <-ggplot(subset(stackRelative,type=="Tra",color=NA),  aes(branch, rate)) +geom_bar(stat = "identity") + aes(fill=rate) + theme(legend.position = 'none') + theme(axis.text.y = element_text(angle = 0,size=4,hjust=1),axis.text.x=element_text(size=5),axis.title = element_blank()) + colorScaleBP +   coord_flip() 
+pBPdel <-ggplot(subset(stackRelative,type=="Del",color=NA),  aes(branch, rate)) +geom_bar(stat = "identity") + aes(fill=rate) + theme(legend.position = 'none') + theme(axis.text.y = element_text(angle = 0,size=4,hjust=1),axis.text.x=element_text(size=5),axis.title = element_blank()) + colorScaleBP +   coord_flip() +guides(fill = guide_colourbar())
+
+DelAnn <- grobTree(textGrob("Del", x=0.7,  y=0.85, hjust=0,
+  gp=gpar(col="gray80", fontsize=18, fontface="bold")))
+InvAnn <- grobTree(textGrob("Inv", x=0.7,  y=0.85, hjust=0,
+  gp=gpar(col="gray80", fontsize=18, fontface="bold")))
+TraAnn <- grobTree(textGrob("Tra", x=0.7,  y=0.85, hjust=0,
+  gp=gpar(col="gray80", fontsize=18, fontface="bold")))
+
+pBPdel<-pBPdel + annotation_custom(DelAnn)
+pBPinv<-pBPinv + annotation_custom(InvAnn)
+pBPtra<-pBPtra + annotation_custom(TraAnn)
+
+
+barplots<-plot_grid(pBPinv,pBPtra,pBPdel,ncol=1,label_size=10,labels=c("D","E","F"))
+plot_grid(pV,pP,pD,barplots, label_size=10,labels = c("A","B","C"), ncol = 4, align = 'v')
+
+
+plot_grid(pV,pP,pD,pBPinv,pBPtra,pBPdel, label_size=10,labels = c("A","B","C","D","E","F"), ncol = 3, align = 'v',rel_heights = c(1.3, 0.7))
+
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/WGA/results/mutations.attines.trees.pdf",width=6,height=3)
+```
+
+```{r fig.height=6, fig.width=6.5}
+
+# Adjust stack relative
+shift<-30
+stackRelative2<-stackRelative
+stackRelative2$rate<-ifelse(stackRelative$rate<0,stackRelative$rate-shift,stackRelative$rate+shift)
+gg1<-ggplot(stackRelative2, aes(fill=rate, y=rate, x=type))+facet_wrap(~branch,ncol=6)
+
+axisTicks<-c(0,100,200,300)
+axisTicksNeg<-c(0,-100)
+gg1<-gg1 + theme(axis.ticks=element_blank(),axis.text=element_blank(),panel.spacing = unit(.5, "lines")) + scale_y_discrete() + 
+      coord_cartesian(clip="off") +
+      scale_x_discrete() + 
+      annotate("segment", x=.4, xend=.4, y=-Inf, yend=Inf,lwd=.1) + # add y axis
+      annotate("segment", x=.4, xend=Inf, y=axisTicks+shift, yend=axisTicks+shift,lwd=.4,lty=3, alpha=.5) +
+      annotate("segment", x=.4, xend=Inf, y=axisTicksNeg-shift, yend=axisTicksNeg-shift,lwd=.4,lty=3, alpha=.5) +
+      annotate("text", x = 0.1, y = axisTicks[2]+shift, label = axisTicks[2],parse=F,size=2.4,angle = 90) +
+      annotate("text", x = 0.1, y = axisTicks[3]+shift, label = axisTicks[3],parse=F,size=2.4,angle = 90) +
+      annotate("text", x = 0.1, y = axisTicks[4]+shift, label = axisTicks[4],parse=F,size=2.4,angle = 90) +
+      annotate("text", x = 0.1, y = axisTicksNeg[2]-shift, label = axisTicksNeg[2],parse=F,size=2.4,angle = 90)
+
+gg1<-gg1   +geom_bar(position="dodge", stat="identity")+   scale_color_gradient(low=goodCols[1], high=goodCols[5],aesthetics = "fill") 
+xpos<-rep(c(1,2,3,4,5),nrow(relative))
+labs<-rep(c("V","P","D","U","I"),nrow(relative))
+
+gg1<-gg1 + annotate("rect", xmin = 0.5, xmax = 5.5, ymin = -shift, ymax = shift,alpha=1,fill="white",color="black")
+gg1<-gg1 + annotate("text", x = 1, y = 0, label = 'bold("V")',parse=T)
+gg1<-gg1 + annotate("text", x = 2, y = 0, label = 'bold("P")',parse=T)
+gg1<-gg1 + annotate("text", x = 3, y = 0, label = 'bold("D")',parse=T)
+gg1<-gg1 + annotate("text", x = 4, y = 0, label = 'bold("U")',parse=T)
+gg1<-gg1 + annotate("text", x = 5, y = 0, label = 'bold("I")',parse=T)
+
+
+# P=Transposition
+# I=Insertion
+# D=Deletion
+# V=Inversion
+# GI(D)=GapInsertion(GapDeletion)
+# U=Duplication
+# DB=Deletion Breakpoint GDB=Gap Deletion Breakpoint
+
+gg1
+
+```
+```{r}
+matV<-read.table("/Users/lukas/sciebo/inquilineGenomics18/WGA/results/Vmatrix.tsv",sep="\t")
+cols <- colorRampPalette(brewer.pal(9,"Blues"))(ncol(matV))
+rT2<-merge(relativeTree,matV,by.x="label",by.y="row.names",all.x=T)
+pieV <- nodepie(rT2, cols=16:(16+ncol(matV)-1),color = cols)
+pV2<-inset(pV, pieV,width = .75,height=.75,hjust = 0.01,vjust=0)
+pV2
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/WGA/results/Vmatrix.pdf",width=4,height=4)
+
+
+matD<-read.table("/Users/lukas/sciebo/inquilineGenomics18/WGA/results/Dmatrix.tsv",sep="\t")
+cols <- colorRampPalette(brewer.pal(9,"Blues"))(ncol(matD)+2)[-c(1,2)]
+rT2<-merge(relativeTree,matD,by.x="label",by.y="row.names",all.x=T)
+pieD <- nodepie(rT2, cols=16:(16+ncol(matD)-1),color = cols)
+pD2<-inset(pD, pieD,width = .75,height=.75,hjust = 0.01,vjust=0)
+pD2
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/WGA/results/Dmatrix.pdf",width=4,height=4)
+
+matP<-read.table("/Users/lukas/sciebo/inquilineGenomics18/WGA/results/Pmatrix.tsv",sep="\t")
+cols <- colorRampPalette(brewer.pal(9,"Blues"))(ncol(matP)+3)[2:ncol(matP)+3]
+rT2<-merge(relativeTree,matP,by.x="label",by.y="row.names",all.x=T)
+pieP <- nodepie(rT2, cols=16:(16+ncol(matP)),color = cols)
+pP2<-inset(pP, pieP,width = .75,height=.75,hjust = 0.01,vjust=0)
+pP2
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/WGA/results/Pmatrix.pdf",width=4,height=4)
+
+
+
+```

@@ -41,7 +41,7 @@ output:
 ######################
 # Load packages
 ######################
-#source("~/sciebo/librarySchrader.R")
+source("~/sciebo/librarySchrader.R")
 library("ape")
 library("Biostrings")
 library("ggplot2")
@@ -322,6 +322,8 @@ col_vector3 <-c (rgb(0,0,0,0),addalpha(goodCols2[6],0.6))
 col_vector4 <- rep("black",(n4+1))
 
 # subfamily coloring
+set.seed(123321)
+#set.seed(7)
 col_vector5 <- distinctColorPalette(n5)
 ```
 
@@ -553,7 +555,11 @@ write.table(tmp3,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tr
 ```
 
 ```{r}
+
 colorTableSF<-data.frame(cbind(as.character(coord_groups2$group),col_vector5))
+
+barplot(rep(1,nrow(colorTableSF)),col=as.character(colorTableSF$col_vector5),names=colorTableSF$V1,las=2)
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/colors.pdf")
 colnames(colorTableSF)<-c("sf","col")
 write.table(colorTableSF,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/colorTableSF.tsv",sep="\t",quote = F,row.names = F)
 

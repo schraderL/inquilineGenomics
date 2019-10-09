@@ -37,10 +37,10 @@ output:
 # Load Environment
 ## Load libraries
 
-```{r}
-######################
+```{r include=FALSE}
+###############
 # Load packages
-######################
+###############
 
 source("~/sciebo/librarySchrader.R")
 library("ape")
@@ -60,21 +60,25 @@ library(data.table)
 library(viridis)
 library(ggplot2)
 library(dplyr)
-
+library(pvclust)
+library(jmuOutlier)
 ```
-
+## Load data
 ```{r}
 # load cladesTree object
 load("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/cladesTree.Robject")
 # load tree_dt object
 load("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/tree_dt.Robject")
+# color table
+colorTableSF<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/colorTableSF.tsv",sep="\t",header=T,stringsAsFactors = F)
+
 tipDF4<-read.table("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/tipsDF4.tsv",T,sep="\t")
 allRELAX<-read.table("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/OR.SOS/results/allRELAX.tsv",T)
 allRELAX$klog2<-log(allRELAX$k,2)
 
 ```
 
-
+## Generate subtrees
 ```{r}
 tipDF4$species<-as.factor(substr(tipDF4$gene,1,4))
 
@@ -111,7 +115,7 @@ for (i in 1:length(subsetTrees)){
   }
 
 ```
-### create plots for each clade
+## create plots for each clade
 ```{r eval=FALSE, fig.height=10, fig.width=10, include=FALSE}
 for (p in levels(tipDF4$smallerCladesTrait)){
   folderName<-gsub("/",".",p)
@@ -122,12 +126,12 @@ for (i in 1:length(ggST)){
   cladetype<-gsub("/",".",tipDF4[tipDF4$clade==targetClades[i],5][1])
   subfam<-tipDF4[tipDF4$clade==targetClades[i],3][1]
   #pdf(paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/CladePlots/",cladetype,"/",subfam,"-Clade-",targetClades[i],".pdf",sep=""),width=3,height=5)
-  print(ggST[[i]])
+  #print(ggST[[i]])
   #dev.off()
 }
 
 ```
-
+## Assign clades
 ```{r eval=FALSE, include=FALSE}
 for (p in levels(tipDF4$smallerCladesTrait)){
   folderName<-gsub("/",".",p)
@@ -137,15 +141,15 @@ for (p in levels(tipDF4$smallerCladesTrait)){
 for (i in 1:length(subsetTrees)){
 cladetype<-gsub("/",".",tipDF4[tipDF4$clade==targetClades[i],5][1])
 subfam<-tipDF4[tipDF4$clade==targetClades[i],3][1]
-#write.tree(subsetTrees[[i]],paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/",cladetype,"/",subfam,"-Clade-",names(subsetTrees)[i],".tre",sep=""))
+write.tree(subsetTrees[[i]],paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/",cladetype,"/",subfam,"-Clade-",names(subsetTrees)[i],".tre",sep=""))
 tipDF4.clade<- subset(tipDF4,gene %in% subsetTrees[[i]]$tip.label)
 
-#write.table(tipDF4.clade,paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/",cladetype,"/",subfam,"-Clade-",names(subsetTrees)[i],".tsv",sep=""),sep="\t",quote = F,row.names = F)
+write.table(tipDF4.clade,paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/",cladetype,"/",subfam,"-Clade-",names(subsetTrees)[i],".tsv",sep=""),sep="\t",quote = F,row.names = F)
 }
 
 ```
 
-### create annotation tables for subfamilies
+## create annotation tables for subfamilies
 ```{r}
 tipDF4$annotation<-"complete"
 tipDF4$annotation[grep("CTE|NTE|NC",tipDF4$gene,perl=T)]<-"fragment"
@@ -160,7 +164,7 @@ annotationTable<-annotationTable[rowSums(annotationTable)!=0,]
 annotationTable
 annotationTableTmp<-cbind(row.names(annotationTable),annotationTable)
 colnames(annotationTableTmp)[1]<-"subfamily"
-#write.table(annotationTableTmp,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/annotationTable.tsv",sep="\t",quote = F,row.names = F)
+write.table(annotationTableTmp,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/annotationTable.tsv",sep="\t",quote = F,row.names = F)
 tipListAll<-split(tipDF4,f=list(tipDF4$subfamily))
 tipListAll2<-(lapply(tipListAll, function(x) summary(x$species)))
 
@@ -168,39 +172,48 @@ annotationTable2<-do.call(rbind,tipListAll2)
 annotationTable2<-annotationTable2[sort(row.names(annotationTable2)),]
 annotationTable2<-annotationTable2[rowSums(annotationTable2)!=0,]
 annotationTable2
-#write.table(annotationTable2,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/annotationTable2.tsv",sep="\t",quote = F,row.names = T)
+write.table(annotationTable2,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/annotationTable2.tsv",sep="\t",quote = F,row.names = T)
 
 
 ```
-```{r fig.height=3.5, fig.width=3.5}
+## Plot clustering & heatmap
+```{r}
 
-annotationTable3<-annotationTable2[apply(annotationTable2, 1, var)> 1,]
-color.palette  <- colorRampPalette(c(goodCols[1],goodCols[8]))(n=50)
-heatmap.2(t(as.matrix(annotationTable3)), col = color.palette,scale = "col",trace="none")
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.heatmap.pdf")
-
+annotationTable3<-annotationTable2[apply(annotationTable2, 1, var)> 0,]
+#color.palette  <- colorRampPalette(c(goodCols[1],goodCols[8]))(n=50)
+color.palette<-viridis(50)
+colSideHM<-colorTableSF$col
+names(colSideHM)<-colorTableSF$sf
+tmp<-heatmap.2(t(as.matrix(annotationTable3)), col = color.palette,scale = "col",trace="none")
+heatmap.2(t(as.matrix(annotationTable3)), col = color.palette,scale = "col",trace="none",ColSideColors=colSideHM[names(tmp$colMeans)],offsetCol =-32.9,cexCol=.6,adjCol=c(.5,0),srtCol=0,    key=FALSE)
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.heatmap.pdf",width=4,height=4)
+heatmap.2(t(as.matrix(annotationTable3)), col = color.palette,scale = "col",trace="none",ColSideColors=colSideHM[names(tmp$colMeans)],offsetCol =-100.5,cexCol=.6,adjCol=c(.5,0),srtCol=0)
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.heatmap.large.pdf",width=10,height=10)
+pvc<-pvclust((as.matrix(annotationTable3)),  method.hclust="complete", method.dist="euclidean", nboot = 10000,parallel=T)
+plot(pvc)
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.heatmap.PVCLUST.pdf")
 ```
 
 
 # Analyse RELAX results
+## color Table
 ```{r}
-colorTableSF<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/colorTableSF.tsv",sep="\t",header=T,stringsAsFactors = F)
 allRELAX<-merge(allRELAX,colorTableSF,by.x="sf",by.y="sf",all.x=T)
 allRELAX$klog2[!is.finite(allRELAX$klog2)]<-(-80)
 ```
 
-
+## Calculate bg omega, omega3 and log(k)
 ```{r}
 # Background Omega
 backgroundOmega<-data.frame(cbind(allRELAX$ToMean,allRELAX$RoMean))
 colnames(backgroundOmega)<-c("T","R")
 backgroundOmegaS<-stack(backgroundOmega)
 pB <- ggplot(backgroundOmegaS, aes(x=ind, y=values,fill=ind)) + 
-  geom_violin() + 
+  geom_violin(lwd=0.1) + 
   theme(axis.text.x = element_text(angle = 0, hjust = 0)) + 
-  scale_y_continuous(name ="background omega") +
+  scale_y_continuous(name =expression(omega["bg"] )) +
   scale_x_discrete(name ="") +
-  scale_fill_manual(values=goodCols[c(5,1)]) +  
+  scale_fill_manual(values=goodCols[c(3,1)]) +  
   guides(fill=FALSE)+
   geom_boxplot(width=0.1,outlier.alpha = 0,fill=rgb(1,1,1,.8))
 
@@ -209,10 +222,10 @@ Omega3<-data.frame(cbind(allRELAX$To3,allRELAX$Ro3))
 colnames(Omega3)<-c("T","R")
 Omega3S<-stack(Omega3)
 p3 <- ggplot(Omega3S, aes(x=ind, y=log(values,10),fill=ind)) + 
-  geom_violin()+
-  scale_y_continuous(name ="omega rate class 3, log10") +
+  geom_violin(lwd=0.1)+
+  scale_y_continuous(name =expression(paste("lg(",omega["3"],")",sep="")) )+
   scale_x_discrete(name ="") +
-  scale_fill_manual(values=goodCols[c(5,1)]) +  
+  scale_fill_manual(values=goodCols[c(3,1)]) +  
   guides(fill=FALSE)+
   geom_boxplot(width=0.1,outlier.alpha = 0,fill=rgb(1,1,1,.8))
 
@@ -220,16 +233,16 @@ p3 <- ggplot(Omega3S, aes(x=ind, y=log(values,10),fill=ind)) +
 kvals<-log(allRELAX$k,2)
 allRELAX$klog2<-log(allRELAX$k,2)
 pK1 <- ggplot(allRELAX, aes(x="",y=klog2,fill=goodCols[2])) + 
-  geom_violin() +
+  geom_violin(col=goodCols[2]) +
   scale_fill_manual(values=goodCols[c(2)]) +
   scale_x_discrete(name ="") +
   guides(fill=FALSE)+
   geom_boxplot(width=0.1,outlier.alpha = 0,fill="white")+
-  scale_y_continuous(name="log2(k)",limits=c(-40,40))+
+  scale_y_continuous(name=expression(paste(log["2"],"(k)",sep="")) ,limits=c(-40,40))+
   geom_hline(yintercept=0, linetype="dashed", color = "red")
 
 pK2 <- ggplot(allRELAX, aes(x="",y=klog2,fill=goodCols[2])) + 
-  geom_violin() +
+  geom_violin(col=goodCols[2]) +
   scale_fill_manual(values=goodCols[c(2)]) +
   scale_x_discrete(name ="") +
   guides(fill=FALSE)+
@@ -246,7 +259,7 @@ plot_grid(pB,p3,pK,ncol=3,labels = c("A","B","C"))
 
 ```
 
-### Permutation tests
+## Permutation tests
 ```{r include=FALSE}
 backgroundPT<-perm.test(allRELAX$ToMean,allRELAX$RoMean,stat=median,paired=T)
 print(backgroundPT)
@@ -258,12 +271,12 @@ print(kPT)
 ```
 
 
-### Create plot with p-values
+## Create plot with p-values
 ```{r echo=FALSE}
 
 pB<-pB+scale_x_discrete(name =paste("perm. test: T > R; p=",ifelse(backgroundPT$p.value==0,"1e-16",backgroundPT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
 p3<-p3+scale_x_discrete(name =paste("perm. test: T < R; p=",ifelse(omega3PT$p.value==0,"1e-16",omega3PT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
-pK1<-pK1+scale_x_discrete(name =paste("perm. test: log2(k) < 0; p=",ifelse(kPT$p.value==0,"1e-16",round(kPT$p.value,3)),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
+pK1<-pK1+scale_x_discrete(name =paste("perm. test: log2(k)<0;\n p=",ifelse(kPT$p.value==0,"1e-16",round(kPT$p.value,3)),"\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
 
 library(viridis)
 pK<-ggdraw() +
@@ -275,7 +288,7 @@ dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/
 
 ```
 
-
+## plot background Omega
 ```{r}
 backgroundOmegaSF<-data.frame(cbind(allRELAX$ToMean,as.character(allRELAX$sf),as.character(allRELAX$col)))
 colnames(backgroundOmegaSF)<-c("T","SF","col")
@@ -290,6 +303,7 @@ pBsf <- ggplot(backgroundOmegaSF, aes(x=SF, y=T,fill=col)) +
 pBsf
 ```
 
+## plot all results
 ```{r fig.height=2, fig.width=3}
 backgroundKSF<-data.frame(cbind(allRELAX$klog2,as.character(allRELAX$sf),as.character(allRELAX$col)))
 colnames(backgroundKSF)<-c("T","SF","col")
@@ -315,13 +329,14 @@ pKsf <- ggplot(bksf2, aes(x=SF, y=T,fill=col)) +
   theme(legend.position="none")
 
 pKsf
-#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.sf.RELAX.pdf",width=4,height=6)
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.sf.RELAX.pdf",width=4,height=6)
 #bksf2
 
 
 ```
 
-```{r fig.height=2, fig.width=2}
+## plot clades with very low K
+```{r}
 klogDF<-allRELAX
 klogDF$klog2[!is.finite(klogDF$klog2)]<-(-80)
 plot(klogDF$klog2,cex=.5,pch=19,col=addalpha(klogDF$col,1),xaxt="n",xlab="",ylab="log2(k)",xlim=c(0,length(klogDF$klog2)+20))
@@ -344,9 +359,10 @@ text(x = (lowK$index+10),y=jitter(lowK$klog2),labels = gsub(".*Clade","c",lowK$O
 
 
 
-#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.sf.RELAX.dotplot.pdf",width=4,height=4)
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.sf.RELAX.dotplot.pdf",width=4,height=4)
 
 ```
+## show summary
 ```{r}
 sum(summary(lowK$sf))
 summary(lowK$sf)

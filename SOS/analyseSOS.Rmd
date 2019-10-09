@@ -37,12 +37,14 @@ output:
 # Input data 
 ### Load environment
 ```{r include=FALSE}
+
+source("~/sciebo/librarySchrader.R")
 #install.packages("rjson")
 library("rjson")
 library(factoextra)
 library(plyr)
 library(tidyr)
-source("~/sciebo/librarySchrader.R")
+
 library("EnvStats")
 library("jmuOutlier")
 library(cowplot)
@@ -176,11 +178,11 @@ backgroundOmega<-data.frame(cbind(allRELAX$ToMean,allRELAX$RoMean))
 colnames(backgroundOmega)<-c("T","R")
 backgroundOmegaS<-stack(backgroundOmega)
 pB <- ggplot(backgroundOmegaS, aes(x=ind, y=values,fill=ind)) + 
-  geom_violin() + 
+  geom_violin(lwd=0.1) + 
   theme(axis.text.x = element_text(angle = 0, hjust = 0)) + 
-  scale_y_continuous(name ="background omega") +
+  scale_y_continuous(name =expression(omega["bg"] )) +
   scale_x_discrete(name ="") +
-  scale_fill_manual(values=goodCols[c(5,1)]) +  
+  scale_fill_manual(values=goodCols[c(3,1)]) +  
   guides(fill=FALSE)+
   geom_boxplot(width=0.1,outlier.alpha = 0,fill=rgb(1,1,1,.8))
 
@@ -189,10 +191,10 @@ Omega3<-data.frame(cbind(allRELAX$To3,allRELAX$Ro3))
 colnames(Omega3)<-c("T","R")
 Omega3S<-stack(Omega3)
 p3 <- ggplot(Omega3S, aes(x=ind, y=log(values,10),fill=ind)) + 
-  geom_violin()+
-  scale_y_continuous(name ="omega rate class 3, log10") +
+  geom_violin(lwd=0.1)+
+  scale_y_continuous(name =expression(paste("lg(",omega["3"],")",sep="")) )+
   scale_x_discrete(name ="") +
-  scale_fill_manual(values=goodCols[c(5,1)]) +  
+  scale_fill_manual(values=goodCols[c(3,1)]) +  
   guides(fill=FALSE)+
   geom_boxplot(width=0.1,outlier.alpha = 0,fill=rgb(1,1,1,.8))
 
@@ -200,16 +202,16 @@ p3 <- ggplot(Omega3S, aes(x=ind, y=log(values,10),fill=ind)) +
 kvals<-log(allRELAX$k,2)
 allRELAX$klog2<-log(allRELAX$k,2)
 pK1 <- ggplot(allRELAX, aes(x="",y=klog2,fill=goodCols[2])) + 
-  geom_violin() +
+  geom_violin(col=goodCols[2]) +
   scale_fill_manual(values=goodCols[c(2)]) +
   scale_x_discrete(name ="") +
   guides(fill=FALSE)+
   geom_boxplot(width=0.1,outlier.alpha = 0,fill="white")+
-  scale_y_continuous(name="log2(k)",limits=c(-40,40))+
+  scale_y_continuous(name=expression(paste(log["2"],"(k)",sep="")) ,limits=c(-40,40))+
   geom_hline(yintercept=0, linetype="dashed", color = "red")
 
 pK2 <- ggplot(allRELAX, aes(x="",y=klog2,fill=goodCols[2])) + 
-  geom_violin() +
+  geom_violin(col=goodCols[2]) +
   scale_fill_manual(values=goodCols[c(2)]) +
   scale_x_discrete(name ="") +
   guides(fill=FALSE)+
@@ -243,7 +245,7 @@ print(kPT)
 
 pB<-pB+scale_x_discrete(name =paste("perm. test: T > R; p<",ifelse(backgroundPT$p.value==0,"1e-16",backgroundPT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
 p3<-p3+scale_x_discrete(name =paste("perm. test: T < R; p<",ifelse(omega3PT$p.value==0,"1e-16",omega3PT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
-pK1<-pK1+scale_x_discrete(name =paste("perm. test: log2(k) < 0; p<",ifelse(kPT$p.value==0,"1e-16",kPT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
+pK1<-pK1+scale_x_discrete(name =paste("perm. test: log2(k) < 0;\n p<",ifelse(kPT$p.value==0,"1e-16",kPT$p.value),"\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
 
 library(viridis)
 pK<-ggdraw() +
@@ -251,7 +253,7 @@ pK<-ggdraw() +
   draw_plot(pK2 + scale_color_viridis(discrete = TRUE) + 
               theme(legend.justification = "top"), 0.5, 0.52, 0.5, 0.4)
 plot_grid(pB,p3,pK,ncol=3,labels = c("A","B","C"))
-#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/plots/RELAX2.summary.pdf",width=8,height=5)
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/plots/RELAX2.summary.pdf",width=8,height=5)
 
 ```
 ### Plot p-value distribution for RELAX

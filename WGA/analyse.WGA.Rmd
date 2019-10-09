@@ -13,7 +13,13 @@ library(ggplot2)
 library(ggpubr)
 library(RColorBrewer)
 library(gplots)
+library(ape)
+library(ggtree)
 ```
+
+### Tree
+((CCOS,(TZET,(TCOR,(TSEP,(((AHEY,(PARG,ACHA)ANC9)Anc07,(AECH,AINS)Anc08)Anc05,(ACOL,ACEP)Anc06)Anc04)Anc03)Anc2)Anc1)ROOT);
+
 
 ###Load and prepare the data from whole genome alignments.
 ```{r include=FALSE}
@@ -22,8 +28,8 @@ rawDataDel<-list()
 data<-list()
 data2<-list()
 resultFolder<-"/Users/lukas/sciebo/inquilineGenomics18/WGA/results/"
-#selection<- c("ACHA","PARG","AHEY","AINS","AECH","Anc09","ACOL","ACEP","Anc07","Anc08","Anc05","Anc04","Anc06")
-selection<- c("ACHA","PARG","AHEY","AINS","AECH","Anc09","ACOL","ACEP","Anc07","Anc08","Anc05","Anc04")
+selection<- c("ACHA","PARG","AHEY","AINS","AECH","Anc09","ACOL","ACEP","Anc07","Anc08","Anc05","Anc04","Anc06")
+#selection<- c("ACHA","PARG","AHEY","AINS","AECH","Anc09","ACOL","ACEP","Anc07","Anc08","Anc05","Anc04")
 for (species in selection){
 
   rawDataIns[[species]]<-read.csv(paste(resultFolder,species,".ins.bed",sep=""),sep="\t",comment.char = "#",F)
@@ -33,10 +39,6 @@ for (species in selection){
   data[[species]]<-rbind(rawDataDel[[species]],rawDataIns[[species]])
   data2[[species]]<-split(data[[species]],f=data[[species]]$MutationID)
 }
-
-```
-
-```{r}
 
 ```
 
@@ -147,7 +149,7 @@ Vall$species<-as.factor(Vall$species)
 Vall$species<-(factor(Vall$species,levels(Vall$species)[c(7,9,1,3,8,10,4,6,11,5,12,2,13)]))
 # rename labels for ranges
 levels(Vall$group)[levels(Vall$group)=="(0,10]"]<-" 0.01 kb"
-levels(Vall$group)[levels(Vall$group)=="(10,50]"]<-" 0.01 kb"
+levels(Vall$group)[levels(Vall$group)=="(10,50]"]<-" 0.01-0.05 kb"
 levels(Vall$group)[levels(Vall$group)=="(50,100]"]<-" 0.05-0.1 kb"
 levels(Vall$group)[levels(Vall$group)=="(100,500]"]<-" 0.1-0.5 kb"
 levels(Vall$group)[levels(Vall$group)=="(500,1e+03]"]<-" 0.5-1.0 kb"
@@ -174,6 +176,39 @@ ggplot(Vall, aes(x = species, y = MY)) +
   scale_fill_manual(values = cols) +
   ylab("Inversion Events per MY") +
   xlab("Branch")
+
+
+
+
+mat<-matrix(ncol=length(levels(Vall$group)),nrow=length(levels(Vall$species)))
+cols <- colorRampPalette(brewer.pal(8,"Blues"))(length(levels(Vall$group)))
+
+colnames(mat)<-levels(Vall$group)
+rownames(mat)<-levels(Vall$species)
+
+for (colnm in colnames(mat)){
+  for (rownm in rownames(mat)){
+      if (length(Vall$n[Vall$group==colnm & Vall$species==rownm])>0){
+      mat[rownm,colnm]<-Vall$n[Vall$group==colnm & Vall$species==rownm]
+      }
+  }
+}
+
+row.names(mat)[row.names(mat)=="Anc04"]<-"N1"
+row.names(mat)[row.names(mat)=="Anc06"]<-"N2"
+row.names(mat)[row.names(mat)=="Anc05"]<-"N3"
+row.names(mat)[row.names(mat)=="Anc07"]<-"N4"
+row.names(mat)[row.names(mat)=="Anc09"]<-"N5"
+row.names(mat)[row.names(mat)=="Anc08"]<-"N6"
+row.names(mat)[row.names(mat)=="ACEP"]<-"Acep"
+row.names(mat)[row.names(mat)=="ACOL"]<-"Acol"
+row.names(mat)[row.names(mat)=="AECH"]<-"Aech"
+row.names(mat)[row.names(mat)=="AINS"]<-"Ains"
+row.names(mat)[row.names(mat)=="ACHA"]<-"Acha"
+row.names(mat)[row.names(mat)=="AHEY"]<-"Ahey"
+row.names(mat)[row.names(mat)=="PARG"]<-"Parg"
+mat<-mat[,colSums(!is.na(mat)) != 0]
+write.table(mat,"/Users/lukas/sciebo/inquilineGenomics18/WGA/results/Vmatrix.tsv",sep="\t",quote=F)
 
 ```
 
@@ -221,6 +256,37 @@ ggplot(Dall, aes(x = species, y = MY)) +
   ylab("Deletion Events per MY") +
   xlab("Branch")
 
+
+
+mat<-matrix(ncol=length(levels(Dall$group)),nrow=length(levels(Dall$species)))
+cols <- colorRampPalette(brewer.pal(8,"Blues"))(length(levels(Dall$group)))
+
+colnames(mat)<-levels(Dall$group)
+rownames(mat)<-levels(Dall$species)
+
+for (colnm in colnames(mat)){
+  for (rownm in rownames(mat)){
+      if (length(Dall$n[Dall$group==colnm & Dall$species==rownm])>0){
+      mat[rownm,colnm]<-Dall$n[Dall$group==colnm & Dall$species==rownm]
+      }
+  }
+}
+
+row.names(mat)[row.names(mat)=="Anc04"]<-"N1"
+row.names(mat)[row.names(mat)=="Anc06"]<-"N2"
+row.names(mat)[row.names(mat)=="Anc05"]<-"N3"
+row.names(mat)[row.names(mat)=="Anc07"]<-"N4"
+row.names(mat)[row.names(mat)=="Anc09"]<-"N5"
+row.names(mat)[row.names(mat)=="Anc08"]<-"N6"
+row.names(mat)[row.names(mat)=="ACEP"]<-"Acep"
+row.names(mat)[row.names(mat)=="ACOL"]<-"Acol"
+row.names(mat)[row.names(mat)=="AECH"]<-"Aech"
+row.names(mat)[row.names(mat)=="AINS"]<-"Ains"
+row.names(mat)[row.names(mat)=="ACHA"]<-"Acha"
+row.names(mat)[row.names(mat)=="AHEY"]<-"Ahey"
+row.names(mat)[row.names(mat)=="PARG"]<-"Parg"
+mat<-mat[,colSums(!is.na(mat)) != 0]
+write.table(mat,"/Users/lukas/sciebo/inquilineGenomics18/WGA/results/Dmatrix.tsv",sep="\t",quote=F)
 ```
 
 # P=Transpositions
@@ -267,6 +333,37 @@ ggplot(Pall, aes(x = species, y = MY)) +
   scale_fill_manual(values = cols) +
   ylab("Transposition Events per MY") +
   xlab("Branch")
+
+
+mat<-matrix(ncol=length(levels(Pall$group)),nrow=length(levels(Pall$species)))
+cols <- colorRampPalette(brewer.pal(8,"Blues"))(length(levels(Pall$group)))
+
+colnames(mat)<-levels(Pall$group)
+rownames(mat)<-levels(Pall$species)
+
+for (colnm in colnames(mat)){
+  for (rownm in rownames(mat)){
+      if (length(Pall$n[Pall$group==colnm & Pall$species==rownm])>0){
+      mat[rownm,colnm]<-Pall$n[Pall$group==colnm & Pall$species==rownm]
+      }
+  }
+}
+
+row.names(mat)[row.names(mat)=="Anc04"]<-"N1"
+row.names(mat)[row.names(mat)=="Anc06"]<-"N2"
+row.names(mat)[row.names(mat)=="Anc05"]<-"N3"
+row.names(mat)[row.names(mat)=="Anc07"]<-"N4"
+row.names(mat)[row.names(mat)=="Anc09"]<-"N5"
+row.names(mat)[row.names(mat)=="Anc08"]<-"N6"
+row.names(mat)[row.names(mat)=="ACEP"]<-"Acep"
+row.names(mat)[row.names(mat)=="ACOL"]<-"Acol"
+row.names(mat)[row.names(mat)=="AECH"]<-"Aech"
+row.names(mat)[row.names(mat)=="AINS"]<-"Ains"
+row.names(mat)[row.names(mat)=="ACHA"]<-"Acha"
+row.names(mat)[row.names(mat)=="AHEY"]<-"Ahey"
+row.names(mat)[row.names(mat)=="PARG"]<-"Parg"
+mat<-mat[,colSums(!is.na(mat)) != 0]
+write.table(mat,"/Users/lukas/sciebo/inquilineGenomics18/WGA/results/Pmatrix.tsv",sep="\t",quote=F)
 ```
 
 # U=Duplications
@@ -404,6 +501,8 @@ barplot(all$Tra/all$total,las=2,names=all$species,xlab="freaction of Transpositi
 
 ```
 ```{r}
+
+# calculate relative rates as percent increase/decrease relative to the mean
 relative<-data.frame(row.names = all$species)
 for(i in colnames(all)[2:ncol(all)]){
   relValues<-((all[,i]/mean(all[,i]))-1)*100
@@ -419,12 +518,14 @@ stackRelative$species<-rep(rownames(relative),length=nrow(stackRelative))
 colnames(stackRelative)<-c("rate","type","branch")
 stackRelative<-subset(stackRelative,type!="total")
 relative
+write.table(relative,"/Users/lukas/sciebo/inquilineGenomics18/WGA/results/relative.mutations.attines.tsv",sep="\t",quote=F)
 ```
 
-```{r fig.height=4, fig.width=6.5}
+```{r fig.height=6, fig.width=6.5}
 
 # Adjust stack relative
 shift<-30
+stackRelative2<-stackRelative
 stackRelative2$rate<-ifelse(stackRelative$rate<0,stackRelative$rate-shift,stackRelative$rate+shift)
 #gg<-ggplot(stackRelative2, aes(fill=type, y=rate, x=branch))
     

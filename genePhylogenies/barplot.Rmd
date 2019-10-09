@@ -1,71 +1,160 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Inquiline Genomics: Create barplots for each analyzed gene family"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
 ---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
-
-```{r}
+# Load Environment
+## Load libraries
+```{r echo=FALSE}
+source("~/sciebo/librarySchrader.R")
 require(reshape2)
 library(ggplot2)
+library(RColorBrewer)
 ```
-
-```{r}
+#ORs
+```{r echo=FALSE}
 OR<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/annotationTable2.tsv",sep="\t")
+OR2<-OR
 colorTab<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/colorTableSF.tsv",sep="\t")
 
 OR$species<-row.names(OR)
 OR<-melt(OR, id = "species")
 colnames(OR)<-c("subfamily","species","count")
+OR$subfamily<-factor(OR$subfamily,levels=rev(row.names(OR2)[order(rowSums(OR2))]))
+OR$species<-factor(OR$species,levels=c("Ccos","Tzet","Tcor","Tsep","Acol","Acep","Aech","Ains","Ahey","Acha","Parg"))
+
+
 # Stacked
+myColors <- addalpha(as.character(colorTab$col),.8)
+names(myColors) <- colorTab$sf
+colScale <- scale_fill_manual(name = "SF",values = myColors)
 ggplot(OR, aes(fill=subfamily, y=count, x=species)) +
-    geom_bar( stat="identity")
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/barplot.pdf")
+    geom_bar( stat="identity",color=1,lwd=.2) + colScale  + theme_classic() + theme(legend.position="right",legend.title = element_blank(),legend.text=element_text(size=7),axis.text.x = element_text(angle = -45,hjust = -.1)) + guides(fill=guide_legend(nrow=length(levels(OR$subfamily))))+   theme(legend.key.size = unit(.1, "cm"),legend.spacing.x = unit(.1, 'cm'))
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR-barplot.pdf",width=5,height=5)
 ```
-
-```{r}
+#MRJPs
+```{r echo=FALSE}
 MRJP<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/Ants.MRJP-yellow.cladeTable.tsv",sep="\t")
-
+MRJP2<-MRJP
 MRJP<-melt(MRJP, id = "clade")
 colnames(MRJP)<-c("subfamily","species","count")
+MRJP$subfamily<-factor(MRJP$subfamily,levels=rev(MRJP2$clade[order(MRJP2$clade)]))
+MRJP$species<-factor(MRJP$species,levels=c("Amel","Acol","Acep","Aech","Ains","Ahey","Acha","Parg"))
+
+colfunc<-colorRampPalette(c(goodCols[1],"gray60"))
+myColors <- colfunc(length(levels(MRJP$subfamily)))
+names(myColors) <- levels(MRJP$subfamily)
+colScale <- scale_fill_manual(name = "subfamily",values = myColors)
+
 # Stacked
 ggplot(MRJP, aes(fill=subfamily, y=count, x=species)) + 
-    geom_bar( stat="identity")
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/barplot.pdf")
-```
+    geom_bar( stat="identity",color=1,lwd=.1) + colScale + theme_classic() +theme(legend.position="right",legend.title = element_blank(),legend.text=element_text(size=7),axis.text.x = element_text(angle = -45,hjust = -.1)) + guides(fill=guide_legend(nrow=length(levels(MRJP$subfamily))))+   theme(legend.key.size = unit(.1, "cm"),legend.spacing.x = unit(.1, 'cm'))
 
-```{r}
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/mrjps/tree/mergeAln/MRJP-barplot.pdf",width=5,height=5)
+```
+#Elongases
+```{r echo=FALSE}
 data<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/ELONGASEevolution/ELG.cladeTable.tsv",sep="\t")
+colnames(data)[colnames(data)==".id"]<-"subfamily"
+data$subfamily<-paste("Elongase Clade ",data$subfamily,sep="")
+data2<-data
 
-data<-melt(data, id = ".id")
+data<-melt(data, id = "subfamily")
 colnames(data)<-c("subfamily","species","count")
+data$subfamily<-as.factor(data$subfamily)
+
+data$subfamily<-factor(data$subfamily,levels=rev(data2$subfamily[order(rowSums(data2[,-1]))]))
+data$species<-factor(data$species,levels=c("Acol","Acep","Aech","Ains","Ahey","Acha","Parg"))
+
+colfunc<-colorRampPalette(c(goodCols[1],"gray60"))
+myColors <- colfunc(length(levels(data$subfamily)))
+names(myColors) <- levels(data$subfamily)
+colScale <- scale_fill_manual(name = "Clade",values = myColors)
+
 # Stacked
 ggplot(data, aes(fill=subfamily, y=count, x=species)) + 
-    geom_bar( stat="identity")
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/ELONGASEevolution/barplot.pdf",width=4,height=4)
+    geom_bar( stat="identity",color=1,lwd=.1) + colScale + theme_classic() +theme(legend.position="right",legend.title = element_blank(),legend.text=element_text(size=4),axis.text.x = element_text(angle = -45,hjust = -.1)) + guides(fill=guide_legend(nrow=length(levels(data$subfamily)))) +   theme(legend.key.size = unit(.1, "cm"),legend.spacing.x = unit(.1, 'cm'))
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/ELONGASEevolution/ELG-barplot.pdf",width=5,height=5)
 ```
-
-```{r}
+#GRs
+```{r echo=FALSE}
 data<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/GRevolution/GRs.cladeTable.tsv",sep="\t")
+colnames(data)[colnames(data)==".id"]<-"subfamily"
+data$subfamily<-paste("GR Clade ",data$subfamily,sep="")
+data2<-data
 
-data<-melt(data, id = ".id")
+data<-melt(data, id = "subfamily")
 colnames(data)<-c("subfamily","species","count")
+data$subfamily<-as.factor(data$subfamily)
+
+data$subfamily<-factor(data$subfamily,levels=rev(data2$subfamily[order(rowSums(data2[,-1]))]))
+data$species<-factor(data$species,levels=c("Acol","Acep","Aech","Ains","Ahey","Acha","Parg"))
+
+colfunc<-colorRampPalette(c(goodCols[1],"gray60"))
+myColors <- colfunc(length(levels(data$subfamily)))
+names(myColors) <- levels(data$subfamily)
+colScale <- scale_fill_manual(name = "Clade",values = myColors)
+
 # Stacked
 ggplot(data, aes(fill=subfamily, y=count, x=species)) + 
-    geom_bar( stat="identity")
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/GRevolution/barplot.pdf",width=4,height=4)
+    geom_bar( stat="identity",color=1,lwd=.1) + colScale + theme_classic() +theme(legend.position="right",legend.title = element_blank(),legend.text=element_text(size=4),axis.text.x = element_text(angle = -45,hjust = -.1)) + guides(fill=guide_legend(nrow=length(levels(data$subfamily)))) +   theme(legend.key.size = unit(.1, "cm"),legend.spacing.x = unit(.1, 'cm')) 
+
+
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/GRevolution/GR-barplot.pdf",width=5,height=5)
 ```
 
-
-```{r}
+#CPRs
+```{r echo=FALSE}
 data<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/CPRevolution/CPR.cladeTable.tsv",sep="\t")
+colnames(data)[colnames(data)==".id"]<-"subfamily"
+data$subfamily<-paste("CPR Clade ",data$subfamily,sep="")
+data2<-data
 
-data<-melt(data, id = ".id")
+data<-melt(data, id = "subfamily")
 colnames(data)<-c("subfamily","species","count")
+data$subfamily<-as.factor(data$subfamily)
+
+data$subfamily<-factor(data$subfamily,levels=rev(data2$subfamily[order(rowSums(data2[,-1]))]))
+data$species<-factor(data$species,levels=c("Acol","Acep","Aech","Ains","Ahey","Acha","Parg"))
+
+colfunc<-colorRampPalette(c(goodCols[1],"gray60"))
+myColors <- colfunc(length(levels(data$subfamily)))
+names(myColors) <- levels(data$subfamily)
+colScale <- scale_fill_manual(name = "Clade",values = myColors)
+
 # Stacked
 ggplot(data, aes(fill=subfamily, y=count, x=species)) + 
-    geom_bar( stat="identity")
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/CPRevolution/barplot.pdf",width=4,height=4)
+    geom_bar( stat="identity",color=1,lwd=.1) + colScale + theme_classic() +theme(legend.position="right",legend.title = element_blank(),legend.text=element_text(size=4),axis.text.x = element_text(angle = -45,hjust = -.1)) + guides(fill=guide_legend(nrow=length(levels(data$subfamily)))) +   theme(legend.key.size = unit(.1, "cm"),legend.spacing.x = unit(.1, 'cm'))
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/specificFamilies/CPRevolution/CPR-barplot.pdf",width=5,height=5)
 ```
