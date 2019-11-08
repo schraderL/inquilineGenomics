@@ -10,18 +10,21 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 ```{r}
 library(msaR)
 library(ape)
+library(plyr)
 ```
 
 ```{r}
-gff<-list()
-gff[["parg"]]<-read.gff("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/annotations/Parg.OR.gff3")
+gffs<-list()
+gffs[["parg"]]<-read.gff("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/annotations/Parg.OR.gff3")
 ```
 
 
 ```{r}
-head(gff[[1]])
-
-genes<-subset(gff[[1]],type=="gene")
+head(gffs[[1]])
+gff<-split(gffs[[1]],gffs[[1]]$seqid)
+ lengths<-lapply(gff, nrow)
+ which.max(lengths)
+genes<-subset(gff[[47]],type=="gene")
 
 plot(genes$start)
 
@@ -35,10 +38,10 @@ names(starts)<-gsub(pattern = ".*ID=(.*);.*" , replacement = "\\1",genes$attribu
 # Ward Hierarchical Clustering
 d <- dist(starts, method = "euclidean") # distance matrix
 fit <- hclust(d, method="ward")
-plot(fit,cex=.2) # display dendogram
-groups <- cutree(fit, k=100) # cut tree into 5 clusters
+plot(fit,cex=.6) # display dendogram
+groups <- cutree(fit, k=10) # cut tree into 5 clusters
 # draw dendogram with red borders around the 5 clusters
-rect.hclust(fit, k=5, border="red")
+rect.hclust(fit, k=10, border="red")
 
 ```
 

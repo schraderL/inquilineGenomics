@@ -70,7 +70,7 @@ export ORfa1=$base/data/$q1/allAechOrs.clean.final.fa
 export ORgff1=$base/data/$q1/allAechOrs.clean.final.gff3
 export queryGenome1=/usr/local/home/lschrader/data/genomes/Aech/Aech_2.0_scaffolds.clean.fa
 
-# Sinv
+# Ains
 export q2=Ains
 export ORfa2=$base/data/$q2/Ains.OR.manualAnnotations.fa
 export ORgff2=$base/data/$q2/Ains.OR.manualAnnotations.renamed.cleaned.gff3

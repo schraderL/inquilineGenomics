@@ -44,7 +44,7 @@ library("rjson")
 library(factoextra)
 library(plyr)
 library(tidyr)
-
+library(coin)
 library("EnvStats")
 library("jmuOutlier")
 library(cowplot)
@@ -227,6 +227,21 @@ pK2 <- ggplot(allRELAX, aes(x="",y=klog2,fill=goodCols[2])) +
 
 ```
 
+
+### Permuted two-sample (paired) wilcoxon tests
+```{r}
+
+df2s<-data.frame(x=c(allRELAX$ToMean,allRELAX$RoMean),y=c(rep("T",length(allRELAX$ToMean)),rep("R",length(allRELAX$RoMean))))
+backgroundWT<-coin::wilcox_test(x~y,data=df2s,paired=T,distribution = approximate(nresample=10000))
+
+To3clean<-allRELAX$To3[!is.na(allRELAX$To3) & !is.na(allRELAX$Ro3)]
+Ro3clean<-allRELAX$Ro3[!is.na(allRELAX$To3) & !is.na(allRELAX$Ro3)]
+
+df3s<-data.frame(x=c(To3clean,Ro3clean),y=c(rep("T",length(To3clean)),rep("R",length(Ro3clean))))
+omega3WT<-coin::wilcox_test(x~y,data=df3s,paired=T,distribution = approximate(nresample=10000))
+
+```
+
 ### Permutation tests
 ```{r include=FALSE}
 backgroundPT<-perm.test(allRELAX$ToMean,allRELAX$RoMean,stat=median,paired=T)
@@ -237,15 +252,16 @@ print(omega3PT)
 median(allRELAX$klog2)
 kPT<-perm.test(allRELAX$klog2,mu = 0,stat=median)
 print(kPT)
+
 ```
 
 
 ### Create plot with p-values
 ```{r echo=FALSE}
 
-pB<-pB+scale_x_discrete(name =paste("perm. test: T > R; p<",ifelse(backgroundPT$p.value==0,"1e-16",backgroundPT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
-p3<-p3+scale_x_discrete(name =paste("perm. test: T < R; p<",ifelse(omega3PT$p.value==0,"1e-16",omega3PT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
-pK1<-pK1+scale_x_discrete(name =paste("perm. test: log2(k) < 0;\n p<",ifelse(kPT$p.value==0,"1e-16",kPT$p.value),"\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
+pB<-pB+scale_x_discrete(name =paste("perm. Wilcoxon test:\n T > R; p<",ifelse(pvalue(backgroundWT)[1]==0,"1e-16",pvalue(backgroundWT)[1]),"\nn=10000",sep="")) + theme(axis.title.x = element_text(size = 10))
+p3<-p3+scale_x_discrete(name =paste("perm. Wilcoxon test:\n T < R; p<",ifelse(pvalue(omega3WT)==0,"1e-16",pvalue(omega3WT)[1]),"\nn=10000",sep="")) + theme(axis.title.x = element_text(size = 10))
+pK1<-pK1+scale_x_discrete(name =paste("one-sample perm. test:\n log2(k) < 0; p<",ifelse(kPT$p.value==0,"1e-16",kPT$p.value),"\nn=10000",sep="")) + theme(axis.title.x = element_text(size = 10))
 
 library(viridis)
 pK<-ggdraw() +

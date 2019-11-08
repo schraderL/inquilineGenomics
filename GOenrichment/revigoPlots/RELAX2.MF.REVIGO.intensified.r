@@ -14,28 +14,23 @@ library( ggplot2 );
 # If you don't have the scales package installed, uncomment the following line:
 # install.packages( "scales" );
 library( scales );
-source("~/sciebo/librarySchrader.R")
+
 
 # --------------------------------------------------------------------------
 # Here is your data from REVIGO. Scroll down for plot configuration options.
 
 revigo.names <- c("term_ID","description","frequency_%","plot_X","plot_Y","plot_size","log10_p_value","uniqueness","dispensability");
-revigo.data <- rbind(c("GO:0005576","extracellular region",10.049, 3.174, 5.427, 3.046,-1.3059,0.903,0.000),
-c("GO:0030496","midbody", 0.235,-0.512, 4.930, 1.431,-1.7373,0.848,0.000),
-c("GO:0032991","macromolecular complex",24.860,-4.991, 0.314, 3.439,-1.0562,0.918,0.000),
-c("GO:0000346","transcription export complex", 0.072, 5.740,-3.195, 0.954,-1.5574,0.679,0.023),
-c("GO:0042995","cell projection", 4.508,-5.680,-2.971, 2.698,-1.4401,0.837,0.034),
-c("GO:0038201","TOR complex", 0.063,-3.323, 3.062, 0.903,-1.4602,0.836,0.038),
-c("GO:0044463","cell projection part", 2.345, 7.152, 2.706, 2.415,-1.4401,0.665,0.045),
-c("GO:0043228","non-membrane-bounded organelle",15.526,-2.692,-6.851, 3.235,-1.8636,0.765,0.095),
-c("GO:0001518","voltage-gated sodium channel complex", 0.018, 2.021, 0.058, 0.477,-1.0969,0.785,0.132),
-c("GO:0031932","TORC2 complex", 0.036, 6.508,-5.235, 0.699,-1.2565,0.736,0.206),
-c("GO:0000347","THO complex", 0.054, 6.939,-3.448, 0.845,-1.5574,0.683,0.274),
-c("GO:0005875","microtubule associated complex", 3.377, 2.836,-5.105, 2.573,-1.4598,0.485,0.294),
-c("GO:0034464","BBSome", 0.054, 6.437,-0.739, 0.845,-1.5519,0.561,0.525),
-c("GO:0016459","myosin complex", 0.253, 3.324,-5.557, 1.462,-1.2248,0.564,0.575),
-c("GO:0043232","intracellular non-membrane-bounded organelle",15.526, 0.153,-7.432, 3.235,-2.1918,0.582,0.599),
-c("GO:0005856","cytoskeleton", 6.391,-0.002,-7.122, 2.849,-1.1034,0.605,0.682));
+revigo.data <- rbind(c("GO:0000287","magnesium ion binding", 1.785, 4.238,-3.495, 5.400,-1.6364,0.796,0.000),
+c("GO:0004001","adenosine kinase activity", 0.008,-5.014, 4.789, 3.060,-2.3279,0.570,0.000),
+c("GO:0004427","inorganic diphosphatase activity", 0.064, 3.605, 6.126, 3.954,-1.7077,0.677,0.017),
+c("GO:0061783","peptidoglycan muralytic activity", 0.218, 0.191,-4.794, 4.486,-1.3206,0.778,0.021),
+c("GO:0003676","nucleic acid binding",21.226,-4.102,-4.279, 6.475,-1.7011,0.832,0.093),
+c("GO:0003796","lysozyme activity", 0.045, 5.185, 1.859, 3.806,-1.6635,0.706,0.155),
+c("GO:0017171","serine hydrolase activity", 1.238, 4.786, 4.062, 5.241,-1.0443,0.689,0.199),
+c("GO:0003998","acylphosphatase activity", 0.024, 2.705, 7.121, 3.528,-1.5884,0.683,0.311),
+c("GO:0016779","nucleotidyltransferase activity", 1.954,-5.103, 2.596, 5.439,-1.2441,0.589,0.338),
+c("GO:0019205","nucleobase-containing compound kinase activity", 0.345,-5.804, 3.027, 4.686,-1.2366,0.587,0.470),
+c("GO:0019206","nucleoside kinase activity", 0.065,-5.126, 4.153, 3.962,-1.1141,0.550,0.675));
 
 one.data <- data.frame(revigo.data);
 names(one.data) <- revigo.names;
@@ -48,6 +43,7 @@ one.data$frequency <- as.numeric( as.character(one.data$frequency) );
 one.data$uniqueness <- as.numeric( as.character(one.data$uniqueness) );
 one.data$dispensability <- as.numeric( as.character(one.data$dispensability) );
 #head(one.data);
+
 
 
 # --------------------------------------------------------------------------
@@ -79,4 +75,4 @@ p1;
 # The file type depends on the extension (default=pdf).
 
 # ggsave("C:/Users/path_to_your_file/revigo-plot.pdf");
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/revigo/ABSREL.CC.revigo.pdf",width=10,height=8);
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/revigo/RELAX.MF.intensified.revigo.pdf",width=10,height=8);

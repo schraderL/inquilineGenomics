@@ -34,6 +34,8 @@ done
 treeFile=~/data/inqGen18/phylogeny/treeDating/MCMCtree/mcmctree.sf50000.sr17.5cal.sigma2.5.5.run4/FigTree.run4.tre
 treeOriginal=$(cat $treeFile|grep UTREE|perl -pe 's/\[.*?\]//g'|cut -f 2 -d "="|sed "s/ //g")
 
+
+
 echo "
 # Sequence data for progressive alignment of 11 genomes
 # Aech is flagged as good assemblies.
@@ -44,6 +46,7 @@ echo "
 $treeOriginal" > $base/tmp.txt
 cat $base/tmp.txt $base/data/genomeFile.txt |sed 's/^AECH/*AECH/g'> $base/attines.txt
 rm tmp.txt
+
 
 source /usr/local/home/lschrader/software/cactus/progressiveCactus/environment
 cd /usr/local/home/lschrader/software/cactus/progressiveCactus/
@@ -58,10 +61,19 @@ halValidate attines.hal
 halSummarizeMutations attines.hal > mutations.attines.tsv
 halStats  --allCoverage attines.hal > stats.attines.tsv
 
-for node in AHEY ACHA AECH AINS PARG Anc09  ACOL ACEP Anc06 Anc07 Anc05 Anc08 Anc06 Anc04
+#hal2maf Ahey.Ains.Aech.Acol.hal Ahey.Ains.Aech.Acol.maf
+
+for node in AHEY ACHA AECH AINS Anc09
 do
   nice halBranchMutations attines.hal $node --refFile $node.ins.bed --parentFile $node.del.bed
 done
+
+for node in ACOL ACEP Anc06 Anc07 Anc05 Anc08 Anc06 Anc04
+do
+  nice halBranchMutations attines.hal $node --refFile $node.ins.bed --parentFile $node.del.bed
+done
+
+
 
 #nice halPhyloPTrain.py attines.hal AECH neutralRegions.bed neutralModel.mod --numProc 12
 
@@ -71,4 +83,3 @@ done
 cd $base/attines/synteny/
 source /usr/local/home/lschrader/software/cactus/progressiveCactus/environment
 hal2synteny ../attines.hal syntey.PARG-ACOL.psl --queryGenome PARG --targetGenome ACOL --maxAnchorDistance 1000000 --minBlockSize 1000000
-hal2synteny ../attines.hal syntey.AHEY-ACOL.psl --queryGenome AHEY --targetGenome ACOL --maxAnchorDistance 1000000 --minBlockSize 1000000

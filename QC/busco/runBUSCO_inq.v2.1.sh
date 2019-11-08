@@ -14,7 +14,7 @@ export AUGUSTUS_CONFIG_PATH="/usr/local/home/lschrader/software/augustus-3.2.3/c
 export base="/usr/local/home/lschrader/data/inqGen18/QC/BUSCO_inquilinesv2.1"
 
 #######################
-# run for novel each species
+# run for each species
 #######################
 
 cd $base
@@ -36,8 +36,8 @@ do
   ls -lh $species
 done
 
+# genome mode
 export BUSCO_CONFIG_FILE=$base/genome.config.ini
-
 $ACHAG
 for species in $AINSG $AHEYG $PARGG
 do
@@ -45,14 +45,10 @@ do
   nice  python ~/software/buscoV3/scripts/run_BUSCO.py --in $species --out $out --lineage $base/datasets/hymenoptera_odb9 --mode genome --cpu 1 -f
 done
 
-
+# protein mode
 export BUSCO_CONFIG_FILE=$base/protein.config.ini
-
 for species in $AINS $AHEY $PARG $ACHA
 do
   out=$(echo $species|rev|cut -f 1 -d "/" |rev)
   nice  python ~/software/buscoV3/scripts/run_BUSCO.py --in $species --out $out.prot --lineage $base/datasets/hymenoptera_odb9 --mode prot --cpu 20
 done
-
-
-python /usr/local/home/lschrader/software/buscoV3/scripts/run_BUSCO.py -i /usr/local/home/lschrader/data/inqGen18/inquilines_v2.1//Acromyrmex_charruanus.2.1/genome/Acromyrmex_charruanus.v2.1.fa -o Acromyrmex_charruanus.v2.1.fa -l /usr/local/home/lschrader/data/inqGen18/QC/BUSCO/datasets/hymenoptera_odb9/ -m genome -c 10 -sp fly

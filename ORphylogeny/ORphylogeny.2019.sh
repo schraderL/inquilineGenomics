@@ -117,6 +117,8 @@ mafft --localpair --maxiterate 100 --merge merge.table cat.ORsubfam.aln > merge.
 ############################################
 # Run tree inference with fastTree
 ############################################
+#To quickly estimate the reliability of each split in the tree, FastTree uses the Shimodaira-Hasegawa test on the three alternate topologies (NNIs) around that split. Specifically, given a topology (A,B),(C,D), where A, B, C, D may be subtrees rather than leaves, FastTree uses the SH test to compare (A,B),(C,D) to alternate topologies (A,C),(B,D) or (A,D),(B,C). Although FastTree uses the CAT approximation and does not fully optimize the branch lengths, the resulting support values are virtually identical to PhyML 3's "SH-like local supports." Both FastTree and PhyML3 use 1,000 resamples and do not reoptimize the branch lengths for the resampled alignments.
+#http://www.microbesonline.org/fasttree/
 
 nice FastTreeMP merge.ORsubfam.aln > ant.OR.tre
 

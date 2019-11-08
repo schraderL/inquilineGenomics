@@ -1,0 +1,207 @@
+---
+title: "Plot OR Clade 285"
+output: html_notebook
+---
+
+# Load, process and analyze clade 285 as one example of clades with missing ORs in parasites and an expansion in leafcutters.
+### Input data 
+```{r}
+#/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/Parg.Ains.Acha/9E-Clade-285.tre
+#/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/Parg.Ains.Acha/9E-Clade-285.tsv
+#/Users/lukas/sciebo/inquilineGenomics18/ORevolution/OR.SOS/absREL/9E-Clade-285.aln.ABSREL.json
+#/Users/lukas/sciebo/inquilineGenomics18/ORevolution/OR.SOS/RELAXall/9E-Clade-285.aln.RELAX.json
+```
+
+
+### Load environment
+```{r}
+#source("~/sciebo/librarySchrader.R")
+#install.packages("rjson")
+library("rjson")
+library(plyr)
+library(tidyr)
+require(ggtree)
+require(phylobase)
+require(phytools)
+library(viridis)
+library(ggplot2)
+library(extrafont)
+```
+
+### Locate data
+```{r}
+folder<-"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/OR.SOS/absREL/"
+files<-dir(folder,pattern ="9E-Clade-285.aln.ABSREL.json")
+```
+
+### Retrieve branch wide dN/dS estimates for clade 285
+```{r}
+
+# branch-wise dN/dS rates
+omegas<-list()
+
+# gene names for each OG
+branchNames<-list()
+
+# pvalues for each branch and OG
+pvalues<-list()
+
+# other metric (currently branch lengths)
+others<-list()
+
+# dN rates (improper)
+dNs<-list()
+
+# dS rates (improper)
+dSs<-list()
+
+
+# loop over json file from each SCO and retrieve data. Store data in data frames 
+for (q in 1:length(files)){
+  OG<-gsub(pattern="(OG[0-9]{7})\\..*","\\1",perl=T,x=files[q])
+  result <- fromJSON(file = paste(folder,files[q],sep=""))
+  
+  omega<-NA
+  pvals<-NA
+  other<-NA
+  dN<-NA
+  dS<-NA
+  for (i in 1:length(result$`branch attributes`$`0`)){
+    omega[i]<-result$`branch attributes`$`0`[[i]]$`Baseline MG94xREV omega ratio`
+    pvals[i]<-result$`branch attributes`$`0`[[i]]$`Corrected P-value`
+    other[i]<-result$`branch attributes`$`0`[[i]]$`Baseline MG94xREV`
+    dN[i]<-result$`branch attributes`$`0`[[i]]$`Rate Distributions`[[1]][1]
+    dS[i]<-result$`branch attributes`$`0`[[i]]$`Rate Distributions`[[1]][2]
+    names(omega)[i]<-names(result$`branch attributes`$`0`)[i]
+    names(pvals)[i]<-names(result$`branch attributes`$`0`)[i]
+    omegas[[OG]]<-omega
+    pvalues[[OG]]<-pvals
+    others[[OG]]<-other
+    dNs[[OG]]<-dN
+    dSs[[OG]]<-dS
+  }
+  names(pvalues[[OG]])<-gsub(x=names(pvals),pattern="([A-Z]{4})[0-9]{5}","\\1",perl=T)
+  names(others[[OG]])<-gsub(x=names(other),pattern="([A-Z]{4})[0-9]{5}","\\1",perl=T)
+  branchNames[[OG]]<-names(omega)
+  names(omegas[[OG]])<-gsub(x=names(omega),pattern="([A-Z]{4})[0-9]{5}","\\1",perl=T)
+  names(branchNames[[OG]])<-gsub(x=names(omega),pattern="([A-Z]{4})[0-9]{5}","\\1",perl=T)
+  names(dNs[[OG]])<-gsub(x=names(omega),pattern="([A-Z]{4})[0-9]{5}","\\1",perl=T)
+  names(dSs[[OG]])<-gsub(x=names(omega),pattern="([A-Z]{4})[0-9]{5}","\\1",perl=T)
+  reorder<-order(names(omegas[[OG]]))
+  
+  omegas[[OG]]<-omegas[[OG]][reorder]
+  pvalues[[OG]]<-pvalues[[OG]][reorder]
+  branchNames[[OG]]<-branchNames[[OG]][reorder]
+  others[[OG]]<-others[[OG]][reorder]
+  dNs[[OG]]<-dNs[[OG]][reorder]
+  dSs[[OG]]<-dSs[[OG]][reorder]
+}
+```
+
+### Create dataframes
+```{R}
+# dN/dS
+om <- data.frame(do.call("rbind", omegas))
+# branch names
+bn <- data.frame(do.call("rbind", branchNames))
+# pvalues
+pv <- data.frame(do.call("rbind", pvalues))
+# other
+ot <- data.frame(do.call("rbind", others))
+# dN
+dn <- data.frame(do.call("rbind", dNs))
+# dS
+ds <- data.frame(do.call("rbind", dSs))
+
+### create one big data frame
+colnames(bn)<-paste(colnames(bn),"bn",sep="")
+colnames(om)<-paste(colnames(om),"om",sep="")
+colnames(pv)<-paste(colnames(pv),"pv",sep="")
+colnames(dn)<-paste(colnames(dn),"dn",sep="")
+colnames(ds)<-paste(colnames(ds),"ds",sep="")
+allABSREL<-cbind(bn,om) %>% cbind(.,pv) 
+head(allABSREL)
+allABSREL$OGid<-row.names(allABSREL)
+
+```
+
+
+```{r}
+require(ggtree)
+require(phylobase)
+tree<-read.tree(text=paste(result$input$trees$`0`,"root;",sep=""))
+tr = tree
+g1 = as(tr, 'phylo4')
+
+#For dN/(dN+dS)
+dataOM<-data.frame(t(dn/(dn+ds)))
+dataOM[,2]<-dataOM[,1]
+#dataOM[dataOM[,2]<0.5,1]<-.5
+#dataOM[dataOM[,2]>.5,1]<-1
+#dataOM[dataOM[,2]==0,1]<-0
+
+## For dN/dS
+#dataOM<-data.frame(t(om))
+#dataOM[dataOM[,1]<1,1]<-0
+#dataOM[dataOM[,1]==1,1]<-.5
+#dataOM[dataOM[,1]>1,1]<-1
+
+dataOM<-rbind(dataOM,NA)
+rownames(dataOM)<-gsub("..$","",rownames(dataOM),perl=T)
+rownames(dataOM)[length(rownames(dataOM))]<-"root"
+colnames(dataOM)<-c("omega","raw")
+
+g2 = phylo4d(g1, all.data=dataOM)
+
+tipLabels(g2)<-gsub("_fd|_df|_fdf","",tipLabels(g2),perl=T)
+tipLabels(g2)<-gsub("_","-",tipLabels(g2),perl=T)
+
+g3<-ggtree(g2, size=1.5, aes(color=omega),ladderize=T) + 
+  scale_color_gradient(breaks=c(0,0.5,.999),labels = c(0,0.5,1),name = "dN/(dN+dS)",
+    guide = guide_colourbar(
+      barheight = .5,
+      nbin = 3,
+      draw.ulim=T,
+      title.position = "top",
+      label.position = "bottom",
+   )
+  ) + 
+  geom_tiplab(size = 3, col ="black",align = T,linetype = "dotted",linesize=.25,family="Courier", offset=.01) +
+  geom_rootedge(.005,size=1.5,color="gray40")+ 
+  geom_treescale(x=-0.01,y=79,fontsize=2.5,width=.02)
+  
+```
+
+```{r}
+d<-data.frame(cbind (tipLabels(g2),substr(tipLabels(g2),1,4)))
+colnames(d)<-c("tip","species")
+rownames(d)<-d$tip
+d$parasite<-NA
+d$parasite[d$species=="Parg"|d$species=="Acha"|d$species=="Ains"]<-"P"
+d$parasite[d$species=="Acol"|d$species=="Acep"]<-"Atta"
+d$parasite[d$species=="Ahey"|d$species=="Aech"]<-"Acromyrmex"
+d$tip<-NULL
+d$species<-NULL
+g4<-gheatmap(g3, d, offset = .08, width=0.1,colnames=F) + scale_fill_manual(values=c(goodCols[1],goodCols[1],goodCols[3])) + theme(legend.position="bottom",legend.text = element_text(size = 8))
+
+ggsave("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/Clade285.pdf",g4,width=5,height=8,family="Courier")
+g4
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/Clade285.pdf",width=6,height=12,family="Courier New")
+```
+```{r}
+tmp<-g4$data
+
+boxplot(tmp$omega[grep( "Ains|Acha|Parg",tmp$label)],tmp$omega[grep( "Aech|Ahey|Acol|Acep",tmp$label)],outline=F)
+hist(tmp$omega[grep( "Ains|Acha|Parg",tmp$label)])
+hist(tmp$omega[grep( "Aech|Ahey|Acol|Acep",tmp$label)])
+wilcox.test(tmp$omega[grep( "Ains|Acha|Parg",tmp$label)],tmp$omega[grep( "Aech|Ahey|Acol|Acep",tmp$label)])
+```
+
+```{r}
+tmp$omega[grep( "Ains|Acha|Parg",tmp$label)]
+
+sum(tmp$omega[grep( "Aech|Ahey|Acol|Acep",tmp$label)]==0.5)/length(tmp$omega[grep( "Aech|Ahey|Acol|Acep",tmp$label)])
+sum(tmp$omega[grep( "Ains|Acha|Parg",tmp$label)]==0.5)/length(tmp$omega[grep( "Ains|Acha|Parg",tmp$label)])
+
+```
+

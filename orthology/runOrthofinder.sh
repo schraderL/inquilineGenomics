@@ -6,7 +6,6 @@
 base=/usr/local/home/lschrader/data/inqGen18/orthologs/orthofinder/
 bd=/usr/local/home/lschrader/data/inqGen18/
 
-
 ########################################
 # get soft links to original peptide files
 for file in $(find $bd/inquilines_v2.1/  -name "*.pep.fa")
@@ -59,7 +58,7 @@ nice orthofinder -t 32 -a 10 -f cleanData/
 ########################################
 
  ########################################
- # run Orthoginder on cleaned pep files
+ # run Orthofinder on cleaned pep files
  cd $base
  # Use files with "TE proteins"
  # consider removing all those proteins that have been identified as being TE-derived.

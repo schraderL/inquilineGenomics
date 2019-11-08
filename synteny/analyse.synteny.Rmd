@@ -128,10 +128,12 @@ kcorAll<-kcor
 
 **Remove all entries from syntenic regions that contain less than 25 syntenic genes**
 ```{r eval=FALSE, include=FALSE}
+kcor<-kcorAll
 # remove all entries from syntenic regions that contain less than 25 syntenic genes
 # basic quality control
 for (i in 1:length(f)){
   if(sum(f[[i]][,5]==as.character(f[[i]][,9]),na.rm=T)<25){kcor[i]<-NA}
+  #if(sum(f[[i]][,5]==as.character(f[[i]][,9]),na.rm=T)>40){kcor[i]<-NA}
 }
 #save(kcor,file="/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2.correlations.Rdata")
 
@@ -146,9 +148,11 @@ sum(!is.na(kcor))
 dimsAll<-unlist(lapply(f,nrow))
 summary(lm(kcorAll~dimsAll))
 
-fSet<-f[which(!is.na(kcor))]
+#fSet<-f[which(!is.na(kcor))]
+#fSet<-f[which(dimsAll>40 & dimsAll < 80 & !is.na(kcor))]
+#kcor[dimsAll > 40 & dimsAll < 80  ]<-NA
 dims<-unlist(lapply(fSet,nrow))
-summary(lm(kcor[!is.na(kcor)]~dims))
+#summary(lm(kcor[!is.na(kcor)]~dims))
 boxplot(dims[grep("PARG-ACOL|ACOL-PARG",names(dims),perl=T)],dims[grep("AHEY-ACOL|ACOL-AHEY",names(dims),perl=T)],dims[grep("AECH-ACOL|ACOL-AECH",names(dims),perl=T)],dims[grep("AINS-ACOL|ACOL-AINS",names(dims),perl=T)],dims[grep("ACHA-ACOL|ACOL-ACHA",names(dims),perl=T)],outline=T)
 
 length(dims[grep("ACOL-AHEY|AHEY-ACOL",names(dims),perl=T)])
@@ -201,12 +205,12 @@ for(i in which(names(fS) %in% ACOLcor)){
     segments(x0=xlims[1],x1=xlims[2],y0=ylims[2],y1=ylims[1],col="gray80",lty=2)
   }
 }
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/synteny/results/examplePlots.pdf",width=7,height=5)
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/synteny/results/examplePlots.pdf",width=7,height=5)
 ```
 
 
 ```{r}
-load(file="/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2.correlations.Rdata")
+#load(file="/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2.correlations.Rdata")
 ```
 
 
@@ -270,11 +274,12 @@ segments(y0=1.001,y1=1.001,x0=1.5,x1=4,lwd=1.5)
 
 val1<-c(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AHEY"]])
 val2<-c(ksets[["ACOL"]][["AINS"]],ksets[["ACOL"]][["ACHA"]],ksets[["ACOL"]][["PARG"]])
-f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
-wt<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 100000),alternative="greater")
+fLab<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+wt<-wilcox_test(c(val1,val2)~fLab,distribution = approximate(nresample = 100000),alternative="greater")
+
 pt<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median)
 text(paste("p <",round(pvalue(wt)[1],3)),y=1.0015,x=2.75,font=2)
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2/synteny.pdf",width=2,height=4)
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/synteny/results/output2/synteny.pdf",width=2,height=4)
 ```
 
 
@@ -284,7 +289,7 @@ wts<-list()
 pts<-list()
 val1<-ksets[["ACOL"]][["AECH"]]
 val2<-ksets[["ACOL"]][["AHEY"]]
-f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+fLab<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
 #wts[["AECH-AHEY"]]<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 10000),alternative="greater")
 pts[["AECH-AHEY"]]<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median,alternative="greater")
 
@@ -292,28 +297,28 @@ pts[["AECH-AHEY"]]<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median,
 
 val1<-ksets[["ACOL"]][["AECH"]]
 val2<-ksets[["ACOL"]][["AINS"]]
-f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+fLab<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
 #wts[["AECH-AINS"]]<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 10000),alternative="greater")
 pts[["AECH-AINS"]]<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median,alternative="greater")
 #wilcox.test(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["AINS"]])
 
 val1<-ksets[["ACOL"]][["AHEY"]]
 val2<-ksets[["ACOL"]][["ACHA"]]
-f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+fLab<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
 #wts[['AHEY-ACHA']]<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 10000),alternative="greater")
 pts[['AHEY-ACHA']]<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median,alternative="greater")
 #wilcox.test(ksets[["ACOL"]][["AHEY"]],ksets[["ACOL"]][["ACHA"]])
 
 val1<-ksets[["ACOL"]][["AHEY"]]
 val2<-ksets[["ACOL"]][["PARG"]]
-f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+fLab<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
 #wts[["AHEY-PARG"]]<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 10000),alternative="greater")
 pts[["AHEY-PARG"]]<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median,alternative="greater")
 #wilcox.test(ksets[["ACOL"]][["AHEY"]],ksets[["ACOL"]][["PARG"]])
 
 val1<-ksets[["ACOL"]][["AECH"]]
 val2<-ksets[["ACOL"]][["ACHA"]]
-f<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
+fLab<-as.factor(c(rep("H",length(val1)),rep("P",length(val2))))
 #wts[["AECH-ACHA"]]<-wilcox_test(c(val1,val2)~f,distribution = approximate(nresample = 10000),alternative="greater")
 pts[["AECH-ACHA"]]<-perm.test(val1[!is.na(val1)],val2[!is.na(val2)],stat=median,,alternative="greater")
 #wilcox.test(ksets[["ACOL"]][["AECH"]],ksets[["ACOL"]][["ACHA"]])

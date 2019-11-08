@@ -1,0 +1,207 @@
+---
+title: "Analyze synteny of ORs (with start coordinates)"
+output: html_notebook
+---
+
+
+```{r}
+library(circlize)
+source("~/sciebo/librarySchrader.R")
+library(rtracklayer)
+```
+
+#### Create a dataframe that contains
+ - orthology between ORs
+ - positions
+ - strand
+ 
+From *segments.txt*:
+id	mul	geno  list	      first	    last	    order
+146	43	ACOL	scaffold277	AcolOr003	AcolOr027	0
+147	43	AECH	scaffold192	AechOr002	AechOr027	1
+148	43	AINS	scaffold35	AinsOr014	AinsOr036	2
+149	43	ACHA	scaffold13	AchaOr011	AchaOr039	3
+150	43	PARG	scaffold103	PargOr002	PargOr016	4
+151	43	AHEY	scaffold15	AheyOr002	AheyOr155fdf	5
+ 
+ 
+And then from *list_elements.txt*
+4807	146	AcolOr003	0	+
+4808	146	AcolOr004	4	+
+4809	146	AcolOr005	5	+
+4810	146	AcolOr006	6	+
+4811	146	AcolOr007	7	+
+4812	146	AcolOr008	8	+
+4813	146	AcolOr009	9	+
+4814	146	AcolOr010	10	+
+4815	146	AcolOr011	11	+
+4816	146	AcolOr012	12	+
+4817	146	AcolOr013	13	+
+4818	146	AcolOr014	14	+
+4819	146	AcolOr015	15	+
+4820	146	AcolOr017	16	+
+4821	146	AcolOr019	17	+
+4822	146	AcolOr021	19	+
+4823	146	AcolOr023	20	+
+4824	146	AcolOr024	22	+
+4825	146	AcolOr025	23	+
+4826	146	AcolOr027	25	+
+
+And *multiplicons.txt*
+38	ACOL	scaffold277		AECH	scaffold192	2	18	29	0	24	0	22	0
+39			38	AINS	scaffold35	3	29	38	0	28	0	23	0
+40			39	ACHA	scaffold13	4	25	42	0	37	0	22	0
+41			40	PARG	scaffold103	5	21	38	1	39	0	13	0
+42			41	AHEY	scaffold15	6	12	28	12	32	2	20	0
+43			41	AHEY	scaffold15	6	12	29	0	27	0	18	0
+44			40	AHEY	scaffold15	5	18	42	1	40	0	21	0
+```{r}
+
+# Load gffs
+gff<-list()
+file.names <- dir("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/annotations/", pattern =".gff3")
+for (i in file.names){
+  gff[[i]]<-readGFF(paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/annotations/",i,sep=""))
+}
+gffs<-do.call("rbind", gff)
+gene<-subset(gffs,type=="gene")
+gene$ID<-gsub("-","",gene$ID)
+
+# Load segments.txt
+segments<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/synteny/ORs/output.multiple/segments.txt",sep="\t")
+
+#load list_elements.txt
+list_elements<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/synteny/ORs/output.multiple/list_elements.txt",sep="\t")
+
+#-------------------------------
+# Select which segment to analyze
+#-------------------------------
+
+selectedSegment<-6
+
+# retrieve appropriate list_elements
+x<-subset(list_elements,segment>=min(subset(segments,multiplicon==selectedSegment,id)) & segment<=max(subset(segments,multiplicon==selectedSegment,id)))
+x$species<-as.factor(gsub("(....).*","\\1",x$gene,perl=T))
+#x$y<-4
+
+# load all orthogroups to determine orthology
+orthogroups<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/synteny/ORs/Orthologues.list",sep="\t",F)
+colnames(orthogroups)<-c("gene","OG")
+x<-merge(x,orthogroups,by.x="gene",by.y="gene")
+x$OG<-as.factor(as.character(x$OG))
+
+# create color column
+library(RColorBrewer)
+n <- length(levels(x$OG))
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+x$cols<-col_vector[as.numeric(x$OG)]
+
+# final dataset
+x<-merge(x,gene,by.x="gene",by.y="ID")
+```
+
+```{r message=FALSE, warning=FALSE}
+par(mar=rep(0,4))
+circos.par("track.height" = 0.1,canvas.xlim=c(-1,1),canvas.ylim=c(-1.2,1.2))
+circos.initialize(factors = x$species, x = x$start)
+#circos.initialize(factors = rep(levels(x$species),2), x = c(rep(-2,length(levels(x$species))),rep(max(x$start)+2,length(levels(x$species)))))
+
+circos.track(factors = rep(levels(x$species),2), y = c(rep(1,length(levels(x$species))),rep(28,length(levels(x$species)))),
+    panel.fun = function(x, y) {
+        circos.text(CELL_META$xcenter, CELL_META$cell.ylim[2] + uy(5, "mm"), 
+            CELL_META$sector.index)
+        circos.axis(labels.cex = 0.6)
+})
+
+#circos.trackPoints(x$species, x$start, x$y, col = col_vector[as.numeric(x$OG)], pch = 16, cex = 1)
+
+#circos.text(-1, 0.5, "text", sector.index = "Parg", track.index = 1)
+#circos.segments(1, 2, 3, 3,lwd=10,sector.index = "Parg")
+
+
+for(i in levels(x$species)){
+  #circos.rect(xleft = 1:max(x$start)-.3,xright=1:max(x$start)+.3,ybottom = 1, sector.index = i,ytop = 27,lwd=0.2)
+  circos.rect(xleft = unlist(subset(x,species==i,start))-.3,xright = unlist(subset(x,species==i,start))+.3,ybottom = 1, ytop = 27,sector.index = i,col=unlist(subset(x,species==i,cols)),lwd=0.5,border=unlist(subset(x,species==i,cols)))
+  
+}
+
+for(q in levels(x$OG)){
+  
+  tmp<-subset(x,OG==q)
+  if(nrow(tmp)>=2)
+  for(i in 1:nrow(tmp)){
+    for (p in 1:nrow(tmp)){
+      if(p==i){next }
+    alphasetting<-ifelse(abs(p-i)==1|abs(p-i)==5,3,500)
+      circos.link(sector.index1 = tmp$species[i],point1 =  tmp$start[i], sector.index2 = tmp$species[p], point2 = tmp$start[p], h = 4,col=addalpha(unique(tmp$cols),1/alphasetting),lwd=3) 
+      
+  
+    }
+  }
+}
+
+#circos.link("Ahey", subset(x,OG=="OG0000136" & species=="Ahey",position), "Acha", subset(x,OG=="OG0000136" & species=="Acha",position), h = 0.4,col)
+#plot(1,1,pch=19,col=tmp$cols[1])
+```
+```{r}
+
+Parg<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/inquilines_v2.1/Pseudoatta_argentina.2.1/genome/Pseudoatta_argentina.v2.1.fa.fai",sep="\t",F)
+Ahey<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/inquilines_v2.1/Acromyrmex_heyeri.2.1//genome/Acromyrmex_heyeri.v2.1.fa.fai",sep="\t",F)
+```
+
+```{r}
+
+fai<-list()
+file.names <- dir(Sys.glob("/Users/lukas/sciebo/inquilineGenomics18/inquilines_v2.1/*/genome/"), pattern =".fai",full.names = T)
+file.names <- c(file.names,dir(Sys.glob("~/sciebo/inquilineGenomics18/reannotations_of_7_ants/*/genome/"), pattern =".fai",full.names = T))
+for (i in file.names){
+  fai[[i]]<-read.csv(i,sep="\t",F)
+}
+names(fai)<-gsub(".*/","",file.names) %>% gsub("\\..*","",.) %>% gsub("(.).*\\_(...).*","\\1\\2",.,perl=T)
+names(gff)<-substr(names(gff),1,4)
+
+a<-list()
+maxOR<-list()
+minOR<-list()
+
+b<-list()
+d<-list()
+for(i in names(fai)){
+a[[i]]<-split(gff[[i]],f = gff[[i]]$seqid)
+maxOR[[i]]<-data.frame(unlist(lapply(a[[i]],function(x) max(c(x$start,x$end)))))
+minOR[[i]]<-data.frame(unlist(lapply(a[[i]],function(x) min(c(x$start,x$end)))))
+colnames(maxOR[[i]])<-"maxPos"
+colnames(minOR[[i]])<-"minPos"
+b[[i]]<-merge(fai[[i]],maxOR[[i]],by.x="V1",by.y="row.names",all.y=T)
+b[[i]]<-merge(b[[i]],minOR[[i]],by.x="V1",by.y="row.names",all.y=T)
+
+}
+
+
+#a2<-split(gff[[5]],f = gff[[5]]$seqid)
+#maxOR2<-data.frame(unlist(lapply(a2,function(x) max(c(x$start,x$end)))))
+#colnames(maxOR2)<-"maxPos"
+#b2<-merge(Ahey,maxOR2,by.x="V1",by.y="row.names")
+
+all<-lapply(b,function(x) cbind(x,x$maxPos/x$V2,x$minPos/x$V2))
+
+for (i in 1:length(all)){
+  colnames(all[[i]])<-c("scf","length","tmp1","tmp2","tmp3","maxORpos","minORpos","relMaxOR","relMinOR")
+  }
+
+boxplot(b[[1]]$V2-b[[1]]$maxPos,b[[2]]$V2-b[[2]]$maxPos,b[[3]]$V2-b[[3]]$maxPos,b[[4]]$V2-b[[4]]$maxPos,outline=F,names=c("Acha","Ahey","Ains","Parg"))
+
+
+```
+
+### Distribution of minimal (blue) and maximum (orange) relative annotation starts across all scaffolds for the different genomes.
+```{r}
+par(mai=rep(.3,4))
+par(mfrow=c(3,4))
+for(i in 1:length(all)){
+plot(density(c(all[[i]]$relMaxOR)),main=names(all)[i],xlab="",col="orange",ylim=c(0,3))
+points(density(c(all[[i]]$relMinOR)),main=names(all)[i],xlab="",type="l",col="blue")
+}
+```
+

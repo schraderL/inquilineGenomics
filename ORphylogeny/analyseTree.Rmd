@@ -42,7 +42,7 @@ output:
 # Load packages
 ###############
 
-source("~/sciebo/librarySchrader.R")
+#source("~/sciebo/librarySchrader.R")
 library("ape")
 library("Biostrings")
 library("ggplot2")
@@ -141,10 +141,10 @@ for (p in levels(tipDF4$smallerCladesTrait)){
 for (i in 1:length(subsetTrees)){
 cladetype<-gsub("/",".",tipDF4[tipDF4$clade==targetClades[i],5][1])
 subfam<-tipDF4[tipDF4$clade==targetClades[i],3][1]
-write.tree(subsetTrees[[i]],paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/",cladetype,"/",subfam,"-Clade-",names(subsetTrees)[i],".tre",sep=""))
+#write.tree(subsetTrees[[i]],paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/",cladetype,"/",subfam,"-Clade-",names(subsetTrees)[i],".tre",sep=""))
 tipDF4.clade<- subset(tipDF4,gene %in% subsetTrees[[i]]$tip.label)
 
-write.table(tipDF4.clade,paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/",cladetype,"/",subfam,"-Clade-",names(subsetTrees)[i],".tsv",sep=""),sep="\t",quote = F,row.names = F)
+#write.table(tipDF4.clade,paste("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/clades/",cladetype,"/",subfam,"-Clade-",names(subsetTrees)[i],".tsv",sep=""),sep="\t",quote = F,row.names = F)
 }
 
 ```
@@ -164,7 +164,7 @@ annotationTable<-annotationTable[rowSums(annotationTable)!=0,]
 annotationTable
 annotationTableTmp<-cbind(row.names(annotationTable),annotationTable)
 colnames(annotationTableTmp)[1]<-"subfamily"
-write.table(annotationTableTmp,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/annotationTable.tsv",sep="\t",quote = F,row.names = F)
+#write.table(annotationTableTmp,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/annotationTable.tsv",sep="\t",quote = F,row.names = F)
 tipListAll<-split(tipDF4,f=list(tipDF4$subfamily))
 tipListAll2<-(lapply(tipListAll, function(x) summary(x$species)))
 
@@ -172,10 +172,28 @@ annotationTable2<-do.call(rbind,tipListAll2)
 annotationTable2<-annotationTable2[sort(row.names(annotationTable2)),]
 annotationTable2<-annotationTable2[rowSums(annotationTable2)!=0,]
 annotationTable2
-write.table(annotationTable2,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/annotationTable2.tsv",sep="\t",quote = F,row.names = T)
+#write.table(annotationTable2,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/annotationTable2.tsv",sep="\t",quote = F,row.names = T)
 
 
 ```
+## Calculate subfamily size changes in percent
+```{r}
+PargRel<-vector()
+AinsRel<-vector()
+AchaRel<-vector()
+for(i in 1:nrow(annotationTable2)){
+PargRel[i]<-  as.data.frame(annotationTable2)$Parg[i]/as.data.frame(annotationTable2)$Ahey[i]
+AchaRel[i]<-  as.data.frame(annotationTable2)$Acha[i]/as.data.frame(annotationTable2)$Ahey[i]
+AinsRel[i]<-  as.data.frame(annotationTable2)$Ains[i]/as.data.frame(annotationTable2)$Aech[i]
+}
+names(PargRel)<-rownames(annotationTable2)
+names(AchaRel)<-rownames(annotationTable2)
+names(AinsRel)<-rownames(annotationTable2)
+
+cbind(annotationTable2,PargRel) %>% cbind(.,AchaRel)%>% cbind(.,AinsRel)
+```
+
+
 ## Plot clustering & heatmap
 ```{r}
 
@@ -186,12 +204,12 @@ colSideHM<-colorTableSF$col
 names(colSideHM)<-colorTableSF$sf
 tmp<-heatmap.2(t(as.matrix(annotationTable3)), col = color.palette,scale = "col",trace="none")
 heatmap.2(t(as.matrix(annotationTable3)), col = color.palette,scale = "col",trace="none",ColSideColors=colSideHM[names(tmp$colMeans)],offsetCol =-32.9,cexCol=.6,adjCol=c(.5,0),srtCol=0,    key=FALSE)
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.heatmap.pdf",width=4,height=4)
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.heatmap.pdf",width=4,height=4)
 heatmap.2(t(as.matrix(annotationTable3)), col = color.palette,scale = "col",trace="none",ColSideColors=colSideHM[names(tmp$colMeans)],offsetCol =-100.5,cexCol=.6,adjCol=c(.5,0),srtCol=0)
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.heatmap.large.pdf",width=10,height=10)
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.heatmap.large.pdf",width=10,height=10)
 pvc<-pvclust((as.matrix(annotationTable3)),  method.hclust="complete", method.dist="euclidean", nboot = 10000,parallel=T)
 plot(pvc)
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.heatmap.PVCLUST.pdf")
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.heatmap.PVCLUST.pdf")
 ```
 
 
@@ -259,6 +277,23 @@ plot_grid(pB,p3,pK,ncol=3,labels = c("A","B","C"))
 
 ```
 
+
+### Permuted two-sample (paired) wilcoxon tests
+```{r}
+
+df2s<-data.frame(x=c(allRELAX$ToMean,allRELAX$RoMean),y=c(rep("T",length(allRELAX$ToMean)),rep("R",length(allRELAX$RoMean))))
+backgroundWT<-coin::wilcox_test(x~y,data=df2s,paired=T,distribution = approximate(nresample=10000))
+
+To3clean<-allRELAX$To3[!is.na(allRELAX$To3) & !is.na(allRELAX$Ro3)]
+Ro3clean<-allRELAX$Ro3[!is.na(allRELAX$To3) & !is.na(allRELAX$Ro3)]
+
+df3s<-data.frame(x=c(To3clean,Ro3clean),y=c(rep("T",length(To3clean)),rep("R",length(Ro3clean))))
+omega3WT<-coin::wilcox_test(x~y,data=df3s,paired=T,distribution = approximate(nresample=10000))
+
+```
+
+
+
 ## Permutation tests
 ```{r include=FALSE}
 backgroundPT<-perm.test(allRELAX$ToMean,allRELAX$RoMean,stat=median,paired=T)
@@ -274,9 +309,9 @@ print(kPT)
 ## Create plot with p-values
 ```{r echo=FALSE}
 
-pB<-pB+scale_x_discrete(name =paste("perm. test: T > R; p=",ifelse(backgroundPT$p.value==0,"1e-16",backgroundPT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
-p3<-p3+scale_x_discrete(name =paste("perm. test: T < R; p=",ifelse(omega3PT$p.value==0,"1e-16",omega3PT$p.value),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
-pK1<-pK1+scale_x_discrete(name =paste("perm. test: log2(k)<0;\n p=",ifelse(kPT$p.value==0,"1e-16",round(kPT$p.value,3)),"\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
+pB<-pB+scale_x_discrete(name =paste("perm. Wilcoxon test: \nT > R; p=",ifelse(pvalue(backgroundWT)==0,"1e-16",pvalue(backgroundWT)),"\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
+p3<-p3+scale_x_discrete(name =paste("perm. Wilcoxon test: \nT < R; p=",ifelse(pvalue(omega3WT)==0,"1e-16",pvalue(omega3WT)),"\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
+pK1<-pK1+scale_x_discrete(name =paste("1-sample perm. test: \nlog2(k)<0; p=",ifelse(kPT$p.value==0,"1e-16",round(kPT$p.value,3)),"\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
 
 library(viridis)
 pK<-ggdraw() +
@@ -286,6 +321,23 @@ pK<-ggdraw() +
 plot_grid(pB,p3,pK,ncol=3,labels = c("A","B","C"))
 dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.RELAX.pdf",width=8,height=5)
 
+```
+
+### Plot test for background omega rates
+```{r}
+pB <- ggplot(backgroundOmegaS, aes(x=ind, y=values,fill=ind)) + 
+  geom_violin(lwd=0.1) + 
+  theme(axis.text.x = element_text(angle = 0, hjust = 0)) + 
+  scale_y_continuous(name =expression(omega["bg"] )) +
+  scale_x_discrete(name ="") +
+  scale_fill_manual(values=goodCols[c(3,1)]) +  
+  guides(fill=FALSE)+
+  geom_boxplot(width=0.2,outlier.alpha = 0,fill=rgb(1,1,1,.8))
+
+pB<-pB+scale_x_discrete(name =paste("perm. test: T > R; p=",ifelse(pvalue(backgroundWT)==0,"1e-16",pvalue(backgroundWT)),"\n\nn=20000",sep="")) + theme(axis.title.x = element_text(size = 10))
+
+pB
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/Clade285.pdf",width=6,height=12)
 ```
 
 ## plot background Omega
@@ -329,7 +381,7 @@ pKsf <- ggplot(bksf2, aes(x=SF, y=T,fill=col)) +
   theme(legend.position="none")
 
 pKsf
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.sf.RELAX.pdf",width=4,height=6)
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.sf.RELAX.pdf",width=4,height=6)
 #bksf2
 
 
@@ -359,7 +411,7 @@ text(x = (lowK$index+10),y=jitter(lowK$klog2),labels = gsub(".*Clade","c",lowK$O
 
 
 
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.sf.RELAX.dotplot.pdf",width=4,height=4)
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/tree/OR.sf.RELAX.dotplot.pdf",width=4,height=4)
 
 ```
 ## show summary

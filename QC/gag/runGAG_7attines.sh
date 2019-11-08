@@ -25,3 +25,15 @@ do
   mv gag_output $species/$species.gag
   mv $species.* $species
 done
+
+
+for gffFile in $(readlink -f  $genomeBase/*/annotation/gene_annotation/*.v2.0.gff)
+do
+  species=$(echo $gffFile|perl -pe 's/.*\/(.).*\_(...).*/$1$2/g')
+  egrep "Total sequence length|Number of genes|Number of mRNAs|Number of CDS|Overlapping genes|Contained genes|Total gene length|Total CDS length|Shortest gene|Longest gene|mean gene length|% of genome covered by genes" $species/$species.gag/genome.stats > $species.gag.stats
+  echo -e " \t $species" > $species.gag.tmp
+  cat $species.gag.stats |cut -c 34- >> $species.gag.tmp
+done
+
+echo "Species|Total sequence length|Number of genes|Number of mRNAs|Number of CDS|Overlapping genes|Contained genes|Total gene length|Total CDS length|Shortest gene|Longest gene|mean gene length|% of genome covered by genes"|tr "\|" "\n" > gag.tmp
+paste gag.tmp *.gag.tmp > 7attines.gag.stats

@@ -263,7 +263,7 @@ boxplot(allRELAX$k[allRELAX$sf=="9E"],allRELAX$k[allRELAX$sf!="9E"],outline=F)
 
 ### write to file
 ```{r}
-write.table(allRELAX,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/OR.SOS/results/allRELAX.tsv", sep = "\t",quote = F, row.names=F)
+#write.table(allRELAX,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/OR.SOS/results/allRELAX.tsv", sep = "\t",quote = F, row.names=F)
 ```
 
 ```{r}
