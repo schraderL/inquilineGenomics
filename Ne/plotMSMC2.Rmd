@@ -1,0 +1,91 @@
+---
+title: "Ne plot"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Prepare Environment
+```{r}
+source("~/sciebo/librarySchrader.R")
+library(ggplot2)
+library(plyr)
+
+q95<-function(x){
+  quantile(x,probs = seq(0, 1, 0.05))
+}
+```
+
+# define mutation rate
+```{R}
+#Mutation rate was used for bumblebees from Liu et al 2016 (https://academic.oup.com/mbe/article/34/1/119/2666005)
+#3.6c10-9
+
+mu <- 3.6e-9
+gen <- 1
+```
+
+# Load data
+```{R}
+crossPopDat<-read.table("~/sciebo/inquilineGenomics18/Ne/results/combined.msmc2.final.txt", header=TRUE)
+
+# Load bootstraps
+path = "~/sciebo/inquilineGenomics18/Ne/results/boot/"
+boot<-list()
+file.names <- dir(path, pattern ="combined.*final.txt")
+
+q<-1
+for(i in file.names){
+  boot[[i]]<-read.table(paste(path,i,sep=""), header=TRUE)
+}
+desat <- function(cols, sat=0.5) {
+    X <- diag(c(1, sat, 1)) %*% rgb2hsv(col2rgb(cols))
+    hsv(X[1,], X[2,], X[3,])
+}
+```
+
+# Calculate bootstrap quantiles
+```{R}
+averageBoot<-as.data.frame(aaply(laply(boot, as.matrix), c(2, 3), median))
+quantileBoot<-as.data.frame(aaply(laply(boot, as.matrix), c(2, 3), q95))
+colnames(quantileBoot)<-gsub("\\.([0-9]+)\\%","_\\1",colnames(quantileBoot),perl=T)
+#lines(averageBoot$left_time_boundary/mu*gen, (1/averageBoot$lambda_00)/mu, type="s", col=goodCols[3],lwd=5)
+#lines(averageBoot$left_time_boundary/mu*gen, (1/averageBoot$lambda_11)/mu, type="s", col=goodCols[1],lwd=5)
+#lines(averageBoot$left_time_boundary/mu*gen, (1/averageBoot$lambda_01)/mu, type="s", col=goodCols[5],lwd=2)
+#bootDF<-bind_rows(boot, .id="df")
+
+```
+
+# percentiles of bootstrapping 
+```{r}
+quantileBoot
+```
+
+# plot bootstraps
+```{r message=FALSE, warning=FALSE}
+
+p<-ggplot(data = quantileBoot, aes(x = left_time_boundary_50/mu*gen, y = (1/lambda_11_50)/mu)) + 
+  coord_cartesian(xlim = c(1e+3,1e+06), ylim = c(1e+3,2.5e+6))+
+  theme_classic()+
+  ylab(expression("N"[e]))+
+  geom_rect(data=quantileBoot,aes(xmin = left_time_boundary_50/mu*gen, xmax = dplyr::lead(left_time_boundary_50/mu*gen), 
+                ymin = (1/lambda_11_5)/mu, ymax = (1/lambda_11_95)/mu), fill = goodCols[1], alpha = .05) +
+  geom_rect(data=quantileBoot,aes(xmin = left_time_boundary_50/mu*gen, xmax = dplyr::lead(left_time_boundary_50/mu*gen), 
+                ymin = (1/lambda_00_5)/mu, ymax = (1/lambda_00_95)/mu), fill = goodCols[3], alpha = .05)
+
+for (i in 1:length(boot)){
+  p<-p+geom_step(data=boot[[i]],aes(x=left_time_boundary/mu*gen, y=(1/lambda_00)/mu),alpha=1,lwd=.1,col=desat(goodCols[3],sat = .3))
+  p<-p+geom_step(data=boot[[i]],aes(x=left_time_boundary/mu*gen, y=(1/lambda_11)/mu),alpha=1,lwd=.1,col=desat(goodCols[1],sat = .03))
+}
+
+p<-p+
+  geom_step(data = quantileBoot, aes(x = left_time_boundary_50/mu*gen, y = (1/lambda_11_50)/mu) ,color=goodCols[1],lwd=2) +
+  geom_step(data = quantileBoot, aes(x = left_time_boundary_50/mu*gen, y = (1/lambda_00_50)/mu) ,color=goodCols[3],lwd=2) 
+  
+p<-p +
+  scale_x_continuous(name = "generations", breaks=c(1e+3,1e+6), labels=c(expression(10^3),expression(10^6)),trans = "log10")+
+  scale_y_continuous(breaks=c(1e+3,1e+4,1e+5,1e+6),labels=c(expression(10^3),expression(10^4),expression(10^5),expression(10^6)), trans = "log10")
+
+p
+dev.print(pdf,"~/sciebo/inquilineGenomics18/Ne/Ne.Ains.Aech.pdf",width=4,height=3)
+```

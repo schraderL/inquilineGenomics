@@ -272,6 +272,13 @@ plot_grid(pB,p3,pK,ncol=3,labels = c("A","B","C"))
 dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/SOS/RELAX/plots/RELAX2.summary.pdf",width=8,height=5)
 
 ```
+
+```{r}
+write.table(backgroundOmegaS,"/Users/lukas/sciebo/inquilineGenomics18/paper/figures/Fig2/backgroundOmegaS.tsv",sep="\t",quote=F,row.names=F)
+write.table(Omega3S,"/Users/lukas/sciebo/inquilineGenomics18/paper/figures/Fig2/Omega3S.tsv",sep="\t",quote=F,row.names=F)
+write.table(kvals,"/Users/lukas/sciebo/inquilineGenomics18/paper/figures/Fig2/kvals.tsv",sep="\t",quote=F,row.names=F)
+```
+
 ### Plot p-value distribution for RELAX
 ```{r}
 allRELAX$fdr<-p.adjust(allRELAX$pval,method="fdr")

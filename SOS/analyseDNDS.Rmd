@@ -1,0 +1,122 @@
+---
+title: "Inquiline Genomics: deeper analysis of absREL on single copy orthologs"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+
+### Load environment
+```{r}
+source("~/sciebo/librarySchrader.R")
+#install.packages("rjson")
+library("rjson")
+library(plyr)
+library(tidyr)
+require(ggtree)
+require(phylobase)
+require(phytools)
+library(viridis)
+library(ggplot2)
+library(extrafont)
+```
+```{r}
+allABSREL<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/SOS/data/absREL.tsv", sep = "\t")
+```
+
+```{r}
+#head(allABSREL)
+#boxplot(allABSREL$ACHAom,allABSREL$ACOLom,allABSREL$AECHom,allABSREL$AHEYom,allABSREL$PARGom,allABSREL$AINSom,allABSREL$P1om,outline=F)
+#library("ape")
+#tree<-read.tree(text="((AHEY:0.024983,(ACHA:0.016335,PARG:0.016335)P1:0.008648)A1:0.027567,(AECH:0.009605,AINS:0.009605)A2:0.042945,ACOL:0.117665)root;")
+
+```
+```{R}
+require(ggtree)
+require(phylobase)
+tree<-read.tree(text="(((AHEY:0.024983,(ACHA:0.016335,PARG:0.016335)P1:0.008648)A1:0.027567,(AECH:0.009605,AINS:0.009605)A2:0.042945)A0:0.065115,ACOL:0.117665)LC;")
+tr = tree
+g1 = as(tr, 'phylo4')
+
+dnMedian<-vector()
+for (i in colnames(allABSREL)[11:19]){
+  dnMedian[i]<-median(unlist(allABSREL[i]),na.rm=T)
+  
+}
+dnMedian["A0"]<-NA
+dnMedian["LC"]<-NA
+
+names(dnMedian)<-gsub("om","",names(dnMedian))
+g2 = phylo4d(g1, all.data=data.frame(dnMedian))
+
+g3<-ggtree(g2, size=5, aes(color=dnMedian),ladderize=T,lineend="square") + 
+  theme(legend.position="right") +  scale_color_viridis()+
+  geom_tiplab(size = 8, col ="black",align = T,linetype = "dotted",linesize=0, offset=0.01) +
+  geom_rootedge(.005,size=5,color="gray40")+
+  geom_treescale(x=-0.01,fontsize=2.5,width=.2)
+  
+
+  g3
+  
+  dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/SOS/ABSREL/median.dnds.pdf",width=8,height=5)
+```
+
+```{r}
+d<-data.frame(cbind (tipLabels(g2),substr(tipLabels(g2),1,4)))
+colnames(d)<-c("tip","species")
+rownames(d)<-d$tip
+d$parasite<-NA
+d$parasite[d$species=="Parg"|d$species=="Acha"|d$species=="Ains"]<-"P"
+d$parasite[d$species=="Acol"|d$species=="Acep"]<-"Atta"
+d$parasite[d$species=="Ahey"|d$species=="Aech"]<-"Acromyrmex"
+d$tip<-NULL
+d$species<-NULL
+g4<-gheatmap(g3, d, offset = .08, width=0.1,colnames=F) + scale_fill_manual(values=c(goodCols[1],goodCols[1],goodCols[3])) + theme(legend.position="bottom",legend.text = element_text(size = 8))
+
+ggsave("/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/Clade285.pdf",g4,width=5,height=8,family="Courier")
+g4
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/results/Clade285.pdf",width=6,height=12,family="Courier New")
+```
+
+
+```{r}
+library(reshape2)
+datOm<-melt(allABSREL, id.vars = "OGid", measure.vars = c("AECHom","AINSom","AHEYom","ACHAom","PARGom","ACOLom","P1om","A2om","A1om"))
+
+
+coin::wilcox_test(value~variable,subset(datOm,variable=="AECHom"|variable=="AINSom"),paired=T,distribution = approximate(nresample=10000))
+coin::wilcox_test(value~variable,subset(datOm,variable=="AHEYom"|variable=="ACHAom"),paired=T,distribution = approximate(nresample=10000))
+coin::wilcox_test(value~variable,subset(datOm,variable=="AHEYom"|variable=="PARGom"),paired=T,distribution = approximate(nresample=10000))
+coin::wilcox_test(value~variable,subset(datOm,variable=="AHEYom"|variable=="P1om"),paired=T,distribution = approximate(nresample=10000))
+coin::wilcox_test(value~variable,subset(datOm,variable=="AHEYom"|variable=="ACOLom"),paired=T,distribution = approximate(nresample=10000))
+```
+

@@ -44,7 +44,7 @@ t.mean2 <- apply(mcmc2[,2:11], 2, mean) * 100
 
 plot(t.mean1, t.mean2, main="Posterior times, run 1 vs. run 2")
 abline(0, 1)
-dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/phylogeny/TreeDating/MCMCtree/results/mcmc.r3.r4.correlation.pdf")
+#dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/phylogeny/TreeDating/MCMCtree/results/mcmc.r3.r4.correlation.pdf")
 
 plot(mcmc1$t_n19, ty='l', main="b) trace of t_n19")
 plot(mcmc1$t_n12, ty='l', main="c) trace of t_n12")
@@ -146,7 +146,7 @@ Compare the prior and the posterior for each variable. \
     plot(dpr, main=paste("sigma2",sep=""), xlab="", ylab="", las=1, xlim=xl, ylim=yl, col="darkgrey")
     lines(dPr, col="black")
     #lines(dDg, col="darkgrey",lty=2)
-    dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/phylogeny/TreeDating/MCMCtree/results/mcmc.r3.priorVSposterior.pdf")
+    #dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/phylogeny/TreeDating/MCMCtree/results/mcmc.r3.priorVSposterior.pdf")
 ```
 
 This looks ok and we don't see substantial incompatibilities between prior and posterior distribution.
@@ -192,8 +192,8 @@ for(i in 1:tree$Nnode+Ntip(tree)){
 }
 par(xpd=T)
 CI
-dev.print(pdf,        # copies the plot to a the PDF file
-          "/Users/lukas/sciebo/inquilineGenomics18/phylogeny/TreeDating/MCMCtree/results/FigTree.run3.pdf")
+#dev.print(pdf,        # copies the plot to a the PDF file
+#         "/Users/lukas/sciebo/inquilineGenomics18/phylogeny/TreeDating/MCMCtree/results/FigTree.run3.pdf")
 ```
 
 #Run4
@@ -224,7 +224,7 @@ for(i in 1:tree$Nnode+Ntip(tree)){
 par(xpd=T)
 CI
 
-dev.print(pdf,        # copies the plot to a the PDF file
-          "/Users/lukas/sciebo/inquilineGenomics18/phylogeny/TreeDating/MCMCtree/results/FigTree.run4.pdf")
+#dev.print(pdf,        # copies the plot to a the PDF file
+#          "/Users/lukas/sciebo/inquilineGenomics18/phylogeny/TreeDating/MCMCtree/results/FigTree.run4.pdf")
   
 ```

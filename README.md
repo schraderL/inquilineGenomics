@@ -21,18 +21,18 @@ base=/corefac/cse/lukas/inqGen18/
 The latest assemblies and annotations delivered from BGI are located on Pallas. The raw files are located at `/usr/local/home/lschrader/data/genomes/inquilines_2.0/`
 
 ```bash
-Acromyrmex charruanus:  ./code/Acha.files.txt
-Acromyrmex insinuator:  ./code/Ains.files.txt
-Acromyrmex heyeri:      ./code/Ahey.files.txt
-Pseudoatta argentina:   ./code/Parg.files.txt
+Acromyrmex charruanus:  ./Acha.files.txt
+Acromyrmex insinuator:  ./Ains.files.txt
+Acromyrmex heyeri:      ./Ahey.files.txt
+Pseudoatta argentina:   ./Parg.files.txt
 ```
 
 #### assembly v2.1/annotation v2.1
 
-Clean genomes and annotations of fungal and mitochondrial scaffolds.
+[Clean genomes and annotations of fungal and mitochondrial scaffolds.](./QC/filterContaminants/inquilines2.0-to-2.1.sh)
 
 ```bash
-./code/QC/filterContaminants/inquilines2.0-to-2.1.sh
+./QC/filterContaminants/inquilines2.0-to-2.1.sh
 
 # location on pallas
 $base/inquilines_v2.1/
@@ -48,78 +48,78 @@ Code, programs and scripts used for quality control of assemblies and annotation
 
 #### BUSCO
 
-BUSCO (v3) was run on v2.1 assembly and annotation of the new genomes and on the reannotated previously published attine genomes
+BUSCO (v3) was run on v2.1 assembly and annotation of [the new genomes](./QC/busco/runBUSCO_inq.v2.1.sh) and on the [reannotated previously published attine genomes](./QC/busco/runBUSCO_7ants.sh).
 
 ```bash
 # newly sequenced genomes
-./code/QC/busco/runBUSCO_inq.v2.1.sh
+./QC/busco/runBUSCO_inq.v2.1.sh
 
 # previously published attines
-./code/QC/busco/runBUSCO_7ants.sh
+./QC/busco/runBUSCO_7ants.sh
 ```
 
 #### Quast
 
-Quast (v5.0.2) was run to assess N50 contig and scaffold sizes and other assembly parameters
+[Quast (v5.0.2) was run](./QC/N50/runQuast.sh) to assess N50 contig and scaffold sizes and other assembly parameters.
 
 ```bash
-./code/QC/N50/runQuast.sh
+./QC/N50/runQuast.sh
 ```
 
 #### TransposonPSI
 
-TransposonPSI (v.08222010) was run to identify putative TE-encoded proteins.
+[TransposonPSI (v.08222010) was run](./QC/transposonPSI/runTransposonPsi.sh) to identify putative TE-encoded proteins.
 
 ```bash
-./code/QC/transposonPSI/runTransposonPsi.sh
+./QC/transposonPSI/runTransposonPsi.sh
 ```
 
 ### GAG
 
-GAG v2.0.1 was run on all newly sequenced genomes (see `./code/QC/filterContaminants/inquilines2.0-to-2.1.sh`) and also on reannoated attines.
+[GAG v2.0.1 was run](./QC/gag/runGAG_7attines.sh) on all newly sequenced genomes (see `./QC/filterContaminants/inquilines2.0-to-2.1.sh`) and also on reannoated attines.
 
 ```bash
-./code/QC/gag/runGAG_7attines.sh
+./QC/gag/runGAG_7attines.sh
 ```
 
 ## Ortholog inference
 
-I used orthofinder (v.2.2.6) to identify orthologs and orthogroups between different species.
+I used orthofinder (v.2.2.6) to [identify orthologs and orthogroups between different species](./orthology/runOrthofinder.sh).
 
 ```bash
-./code/orthology/runOrthofinder.sh
+./orthology/runOrthofinder.sh
 ```
 
 ## Species Phylogeny
 
 #### Orthologous 4-fold degenerate site alignment
 
-Alignment of single copy orthologs, testing for recombination and extraction of 4d sites.
+[Alignment of single copy orthologs, testing for recombination and extraction of 4d sites](./singleCopyOrthologs/runSCOalignment.sh).
 
 ```bash
-./code/singleCopyOrthologs/runSCOalignment.sh
+./singleCopyOrthologs/runSCOalignment.sh
 ```
 
 #### Phylogenetic inference
 
-Phylogenetic inference with PAUP, PhyML, MrBayes, and RaxML
+[Phylogenetic inference](./phylogeny/runPhylogeny.sh) with PAUP, PhyML, MrBayes, and RaxML
 
 ```bash
-./code/phylogeny/runPhylogeny.sh
+./phylogeny/runPhylogeny.sh
 ```
 
 ### Tree divergence dating
-
+[Divergence estimates with mcmcTree](./TreeDating/treeDating.workflow.sh)
 ```bash
-./code/TreeDating/treeDating.workflow.sh
+./TreeDating/treeDating.workflow.sh
 ```
 
 ## Gene Family Evolution
 
-The complete workflow for analysing gene family evolution with CAFE is described here:
+The [complete workflow](./geneFamilies/README.md) for analysing gene family evolution with CAFE is described here:
 
 ```bash
-./code/geneFamilies/README.md
+./geneFamilies/README.md
 
 # This readme refers to the following scripts:
   run.geneFamilies.mcl.sh
@@ -131,39 +131,39 @@ The complete workflow for analysing gene family evolution with CAFE is described
 ```
 
 ## Evolutionary rate analyses
-Evolutionary rate analyses and signatures of selection (SOS) on single copy orthologs with HyPhy (v2.3.14)
+[Evolutionary rate analyses](./SOS/AnalyseDNDS.hyphy.sh) and signatures of selection (SOS) on single copy orthologs with HyPhy (v2.3.14)
 
 ```
-./code/SOS/AnalyseDNDS.hyphy.sh
-./code/SOS/RELAX.summary.Rmd
-./code/SOS/absREL.summary.Rmd
-./code/SOS/analyseSOS.Rmd
+./SOS/AnalyseDNDS.hyphy.sh
+./SOS/RELAX.summary.Rmd
+./SOS/absREL.summary.Rmd
+./SOS/analyseSOS.Rmd
 ```
 ## Gene Ontology (GO) enrichment
-GO enrichment analyses were run on genes under relaxed, positive, and identified selection and on shrinking gene families.
+GO enrichment analyses were run on genes under [relaxed, intensified](./GOenrichment/RELAX.GOenrichment.Rmd), and [positive](./GOenrichment/absREL.GOenrichment.Rmd) selection and on shrinking gene families.
 ```bash
-./code/GOenrichment/RELAX.GOenrichment.Rmd
-./code/GOenrichment/absREL.GOenrichment.Rmd
-./code/GOenrichment/CAFE.GOenrichment.Rmd
+./GOenrichment/RELAX.GOenrichment.Rmd
+./GOenrichment/absREL.GOenrichment.Rmd
+./GOenrichment/CAFE.GOenrichment.Rmd
 # scripts for revigo plots
-./code/GOenrichment/revigoPlots/
+./GOenrichment/revigoPlots/
 ```
 
 ## Whole genome alignment
 Whole genome alignment with progressiveCactus v0.1
 ```bash
-./code/WGA/run.progressiveCactus.sh
+./WGA/run.progressiveCactus.sh
 ```
 
 ## Synteny Analysis
 Synteny was analyzed with i-adhore v3.0.1
 ```bash
-./code/synteny/run.iadhore.sh
-./code/synteny/analyse.synteny.Rmd
+./synteny/run.iadhore.sh
+./synteny/analyse.synteny.Rmd
 
 # analysis of annotated OR genes only
-./code/synteny/run.iadhore.ORs.sh
-./code/synteny/plotOR.synteny.Rmd
+./synteny/run.iadhore.ORs.sh
+./synteny/plotOR.synteny.Rmd
 
 ```
 
@@ -174,7 +174,7 @@ Synteny was analyzed with i-adhore v3.0.1
 The full annotation pipeline is contained in
 
 ```bash
-./code/ORevolution/clean/ORannotation.190408.sh
+./ORevolution/clean/ORannotation.190408.sh
 ```
 
 The following scipts are called in the above bash script:
@@ -210,49 +210,49 @@ hsp2bed.pl
 Scripts for OR alignments, alignment QC, tree inference, tree plotting, and analyses.
 
 ```bash
-./code/ORphylogeny/ORphylogeny.sh
-./code/ORphylogeny/ORplotTreeClean.Rmd
-./code/ORphylogeny/analyseTree.Rmd
+./ORphylogeny/ORphylogeny.sh
+./ORphylogeny/ORplotTreeClean.Rmd
+./ORphylogeny/analyseTree.Rmd
 ```
 
 #### Evolutionary rate analyses in ORs with HyPhy (v2.3.14)
 
 ```bash
-./code/ORevolution/OR.SOS/hyphy.ORs.sh
-./code/ORevolution/OR.SOS/summary.RELAX.OR.Rmd
-./code/ORevolution/OR.SOS/summary.absREL.OR.Rmd
+./ORevolution/OR.SOS/hyphy.ORs.sh
+./ORevolution/OR.SOS/summary.RELAX.OR.Rmd
+./ORevolution/OR.SOS/summary.absREL.OR.Rmd
 
 # Detailed analysis of clade 285
-./code/ORevolution/OR.SOS/analyseClade285.Rmd
+./ORevolution/OR.SOS/analyseClade285.Rmd
 ```
 
 ## Annnotation & analysis of other gene families
 
 ```bash
 # MRJPs
-./code/genePhylogenies/MRJPevolution/MRJP.annotation.sh
-./code/genePhylogenies/MRJPevolution/MRJP.phylogeny.sh
-./code/genePhylogenies/MRJPevolution/plotMRJP.tree.Rmd
-./code/genePhylogenies/MRJPevolution/mrjp.analyseTree.Rmd
+./genePhylogenies/MRJPevolution/MRJP.annotation.sh
+./genePhylogenies/MRJPevolution/MRJP.phylogeny.sh
+./genePhylogenies/MRJPevolution/plotMRJP.tree.Rmd
+./genePhylogenies/MRJPevolution/mrjp.analyseTree.Rmd
 
 # Gustatory Receptors (GR)
-./code/genePhylogenies/GRevolution/annotateGRs.sh
-./code/genePhylogenies/GRevolution/phylogenyGRs.sh
-./code/genePhylogenies/GRevolution/plotGRtree.Rmd
+./genePhylogenies/GRevolution/annotateGRs.sh
+./genePhylogenies/GRevolution/phylogenyGRs.sh
+./genePhylogenies/GRevolution/plotGRtree.Rmd
 
 # Elongases
-./code/genePhylogenies/ELONGASEevolution/annotate.ELNG.sh
-./code/genePhylogenies/ELONGASEevolution/phylogeny.ELNG.sh
-./code/genePhylogenies/ELONGASEevolution/plotELGtree.Rmd
+./genePhylogenies/ELONGASEevolution/annotate.ELNG.sh
+./genePhylogenies/ELONGASEevolution/phylogeny.ELNG.sh
+./genePhylogenies/ELONGASEevolution/plotELGtree.Rmd
 
 # Cuticular Proteins (CPRs)
-./code/genePhylogenies/CPRevolution/annotateCPR.sh
-./code/genePhylogenies/CPRevolution/phylogenyCPR.sh
-./code/genePhylogenies/CPRevolution/plotCPRtree.Rmd
+./genePhylogenies/CPRevolution/annotateCPR.sh
+./genePhylogenies/CPRevolution/phylogenyCPR.sh
+./genePhylogenies/CPRevolution/plotCPRtree.Rmd
 ```
 
 #### Script to plot barplots for all analyzed gene families
 
 ```bash
-./code/genePhylogenies/barplot.Rmd
+./genePhylogenies/barplot.Rmd
 ```
