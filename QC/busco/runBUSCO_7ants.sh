@@ -28,7 +28,7 @@ for genome in $(readlink -f  $genomeBase/*/genome/*.v2.0.fa)
 do
   species=$(echo $genome|perl -pe 's/.*\/(.).*\_(...).*/$1$2/g')
   out=$(echo $genome|rev|cut -f 1 -d "/" |rev)
-  nice python ~/software/buscoV3/scripts/run_BUSCO.py --in $genome --out $out --lineage $baseDB/datasets/hymenoptera_odb9 --mode genome --cpu 1 -f
+  #nice python ~/software/buscoV3/scripts/run_BUSCO.py --in $genome --out $out --lineage $baseDB/datasets/hymenoptera_odb9 --mode genome --cpu 1 -f
 done
 
 # protein mode
@@ -40,3 +40,4 @@ do
   out=$(echo $protein|rev|cut -f 1 -d "/" |rev)
   nice  python ~/software/buscoV3/scripts/run_BUSCO.py --in $protein --out $out.prot --lineage $baseDB/datasets/hymenoptera_odb9 --mode prot --cpu 20
 done
+# ls ~/data/inqGen18/QC/BUSCO/out.protein/

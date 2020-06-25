@@ -156,8 +156,9 @@ g2 = phylo4d(g1, all.data=dataOM)
 tipLabels(g2)<-gsub("_fd|_df|_fdf","",tipLabels(g2),perl=T)
 tipLabels(g2)<-gsub("_","-",tipLabels(g2),perl=T)
 
-g3<-ggtree(g2, size=1.5, aes(color=omega),ladderize=T) + 
-  scale_color_gradient(breaks=c(0,0.5,.999),labels = c(0,0.5,1),name = "dN/(dN+dS)",
+g3<-ggtree(g2, size=1.5, aes(color=omega),ladderize=T,lineend="square") + 
+  #scale_color_gradient(low=goodCols[1],high=goodCols[5],breaks=c(0,0.5,.999),labels = c(0,0.5,1),name = "dN/(dN+dS)",
+  scale_color_gradient(low="gray10",high="gray70",breaks=c(0,0.5,.999),labels = c(0,0.5,1),name = "dN/(dN+dS)",                       
     guide = guide_colourbar(
       barheight = .5,
       nbin = 3,

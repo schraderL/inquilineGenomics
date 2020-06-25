@@ -164,6 +164,7 @@ CC
 
 subset(all,OGid %in% genesInTerm(GOdata_BP, "GO:0046903")[[1]] & pval<0.05)
 subset(all,OGid %in% genesInTerm(GOdata_MF, "GO:0005158")[[1]] & pval<0.05)
+subset(all,OGid %in% genesInTerm(GOdata_CC, "GO:0038201")[[1]] & pval<0.05)
 
 ```
 

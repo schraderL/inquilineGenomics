@@ -113,7 +113,7 @@ library(reshape2)
 datOm<-melt(allABSREL, id.vars = "OGid", measure.vars = c("AECHom","AINSom","AHEYom","ACHAom","PARGom","ACOLom","P1om","A2om","A1om"))
 
 
-coin::wilcox_test(value~variable,subset(datOm,variable=="AECHom"|variable=="AINSom"),paired=T,distribution = approximate(nresample=10000))
+a<-coin::wilcox_test(value~variable,subset(datOm,variable=="AECHom"|variable=="AINSom"),paired=T,distribution = approximate(nresample=10000))
 coin::wilcox_test(value~variable,subset(datOm,variable=="AHEYom"|variable=="ACHAom"),paired=T,distribution = approximate(nresample=10000))
 coin::wilcox_test(value~variable,subset(datOm,variable=="AHEYom"|variable=="PARGom"),paired=T,distribution = approximate(nresample=10000))
 coin::wilcox_test(value~variable,subset(datOm,variable=="AHEYom"|variable=="P1om"),paired=T,distribution = approximate(nresample=10000))

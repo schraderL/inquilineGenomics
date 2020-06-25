@@ -40,7 +40,7 @@ output:
 
 # R steps
 ```{r}
-#source("https://bioconductor.org/biocLite.R")
+source("https://bioconductor.org/biocLite.R")
 BiocManager::install("GO.db")
 biocLite("GO.db")
 library("topGO")
@@ -86,8 +86,8 @@ names(scoNames) <- scoNames
 #SCOOfInterest<-unlist(subset(all,p.adjust(P1pv,method = "fdr")<0.05 | p.adjust(AINSpv,method = "fdr")<0.05 | p.adjust(PARGpv,method = "fdr")<0.05 | p.adjust(ACHApv,method = "fdr")<0.05,OGid))
 
 # Origin of parasitism
-#SCOOfInterest<-unlist(subset(all,PARGfdr<0.05 | AINSfdr<0.05 | ACHAfdr<0.05 |  P1fdr<0.05,OGid))
-SCOOfInterest<-unlist(subset(all,AINSfdr<0.1 |  P1fdr<0.1,OGid))
+SCOOfInterest<-unlist(subset(all,PARGfdr<0.05 | AINSfdr<0.05 | ACHAfdr<0.05 |  P1fdr<0.05,OGid))
+#SCOOfInterest<-unlist(subset(all,AINSfdr<0.1 |  P1fdr<0.1,OGid))
 #SCOOfInterest<-unlist(subset(all,PARGfdr<0.05,OGid))
 
 #SCOOfInterest<-unlist(subset(all,p.adjust(PARGpv,method = "fdr")<0.05 ,OGid))
@@ -163,9 +163,11 @@ subset(all,OGid %in% genesInTerm(GOdata_MF, "GO:0008289")[[1]] & (AINSfdr<0.05 |
 # Origins of social parasitism
 res<-rbind(MF,BP) %>% rbind(.,CC)
 outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.absREL.parasiteOrigins.tsv"
+#outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.absREL.parasiteBranches.tsv"
 #write.table(res,outfile,quote=F,sep="\t",row.names = F)
 cat("# GO enrichment of genes under positive selection at either social parasite origin (AINS or P1) (at FDR<0.1). \n",file=outfile)
-write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
+#cat("# GO enrichment of genes under positive selection at either social parasite branch (ACHA, PARG, AINS or P1) (at FDR<0.1). \n",file=outfile)
+#write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
 
 
 ```
