@@ -130,6 +130,12 @@ The [complete workflow](./geneFamilies/README.md) for analysing gene family evol
   analyseCAFEoutput.Rmd
 ```
 
+## Demographic inference with MSMC2
+Demographic history for A. insinuator and A. echinatior with MSMC2:
+
+./Ne/MSMC2.refAech.md
+./Ne/plotMSMC2.Rmd
+
 ## Evolutionary rate analyses
 [Evolutionary rate analyses](./SOS/AnalyseDNDS.hyphy.sh) and signatures of selection (SOS) on single copy orthologs with HyPhy (v2.3.14)
 
@@ -214,6 +220,18 @@ Scripts for OR alignments, alignment QC, tree inference, tree plotting, and anal
 ./ORphylogeny/ORplotTreeClean.Rmd
 ./ORphylogeny/analyseTree.Rmd
 ```
+
+#### OR gene tree reconciliation
+
+Scripts for clade-wide OR alignments, alignment QC, tree inference, tree plotting, and analyses.
+
+```bash
+./ORevolution/reconciliation/allClades.Rmd
+./ORevolution/reconciliation/DLCpar.md
+./ORevolution/reconciliation/plotReconTreeDLCpar.Rmd
+./ORevolution/reconciliation/runAllDLCpar.sh
+```
+
 
 #### Evolutionary rate analyses in ORs with HyPhy (v2.3.14)
 
