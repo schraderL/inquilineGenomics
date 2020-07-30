@@ -1,0 +1,93 @@
+---
+title: "Inquiline Genomics: Final Figures: Reconciled OR clades"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+```{bash}
+#cd /Users/lukas/sciebo/Projects/testing/tmp/dlcpar/output
+#scp -o ProxyCommand="ssh -W %h:%p zcm795@ssh-bio-labnet.science.ku.dk"  lschrader@pallas.bio.ku.dk:/usr/local/home/lschrader/data/inqGen18/ORphylogeny/reconciledClades/*/DLC/*recon.tsv .
+
+```
+
+```{r}
+
+recons<-list()
+path<-"/Users/lukas/sciebo/Projects/testing/tmp/dlcpar/output/"
+file.names <- dir(path, pattern =".tsv")
+file.names2<-vector()
+p<-1
+for(i in 1:length(file.names)){
+  filename<-paste(path,file.names[i],sep="") 
+  if (!file.size(filename) == 0) {
+  recons[[p]] <- read.table(filename,header=TRUE, sep="\t", stringsAsFactors=FALSE)
+  recons[[p]]$relduploss<-(recons[[p]]$dup-recons[[p]]$loss)/recons[[p]]$dist
+  file.names2[p]<-file.names[p]
+  p<-p+1
+  }
+}
+library(tidyverse)
+names(recons)<-file.names2
+reconsAll<-recons[[1]]
+recons9E<-recons[grep("^9E",names(recons))]
+for (i in 4:ncol(reconsAll)){
+reconsAll[,i]<-rowSums(sapply(recons9E, `[[`, i), na.rm = TRUE)
+}
+
+reconsAll$duploss<-reconsAll$dup-reconsAll$loss
+reconsAll$relduploss<-(reconsAll$dup-reconsAll$loss)/reconsAll$dist
+```
+
+
+```{r}
+mcmctree<-readMCMCtree("/Users/lukas/sciebo/inquilineGenomics18/phylogeny/TreeDating/MCMCtree/results/FigTree.run4.tre")
+speciesTree<-mcmctree$apePhy
+gS = as(speciesTree, 'phylo4')
+labels(gS)<-c("TCOR","TSEP","AHEY","ACHA","PARG","AECH","AINS","ACEP","ACOL","TZET","CCOS","1","2","3","4","5","6","7","8","9","10")
+
+#rownames(reconsAll)<-reconsAll$nodeid
+
+gS2<-ggtree(gS,ladderize=T,right=F,size=2.8,lineend='square')+geom_rootedge(0.004,size=2.2,col="gray70")+ xlim(-0.005, .14) 
+gS3<-gS2 %<+% reconsAll 
+
+gS4<-gS3+ aes(color=log((dup+1)/(loss+1),2))+geom_tiplab(offset=.01,col=1) +xlim(c(0,.5))
+#+scale_color_gradientn(colours = rev(c("gray20","lightblue","#79d70f")))
+
+
+```
+```{r}
+gS4
+dev.print(pdf,"/Users/lukas/sciebo/inquilineGenomics18/ORevolution/reconciliation/allClades.pdf")
+gS3$data
+```
+
