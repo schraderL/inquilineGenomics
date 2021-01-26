@@ -40,9 +40,9 @@ output:
 
 # R steps
 ```{r}
-source("https://bioconductor.org/biocLite.R")
-BiocManager::install("GO.db")
-biocLite("GO.db")
+#source("https://bioconductor.org/biocLite.R")
+#BiocManager::install("GO.db")
+#biocLite("GO.db")
 library("topGO")
 library(dplyr)
 library(plyr)
@@ -87,6 +87,7 @@ names(scoNames) <- scoNames
 
 # Origin of parasitism
 #SCOOfInterest<-unlist(subset(all,PARGfdr<0.05 | AINSfdr<0.05 | ACHAfdr<0.05 |  P1fdr<0.05,OGid))
+
 SCOOfInterest<-unlist(subset(all,p.adjust(all$AECHpv,method = "fdr")<0.1 | p.adjust(all$AHEYpv,method = "fdr")<0.1,OGid))
 #SCOOfInterest<-unlist(subset(all,AINSfdr<0.1 |  P1fdr<0.1,OGid))
 #SCOOfInterest<-unlist(subset(all,PARGfdr<0.05,OGid))
@@ -128,18 +129,55 @@ table_BP <- GenTable(GOdata_BP, parentChild = resultFis_BP, orderBy = "parentChi
 ####################
 resultFis_CC <- runTest(GOdata_CC, algorithm = "parentchild", statistic = "fisher")
 table_CC <- GenTable(GOdata_CC, parentChild = resultFis_CC, orderBy = "parentChild", ranksOf = "parentChild", topNodes = 200)
+```
 
 
+```{r}
 # filter out significant GO terms:
 ###################################
 
-MF <- subset(table_MF, parentChild < 0.1)
-BP <- subset(table_BP, parentChild < 0.1)
-CC <- subset(table_CC, parentChild < 0.1)
+MF1 <- subset(table_MF, parentChild < 0.1)
+BP1 <- subset(table_BP, parentChild < 0.1)
+CC1 <- subset(table_CC, parentChild < 0.1)
 
-MF$ontology<-"MF"
-BP$ontology<-"BP"
-CC$ontology<-"CC"
+MF1
+BP1
+CC1
+```
+
+
+```{r}
+# Molecular Function
+####################
+resultFis_MF 	<- runTest(GOdata_MF, algorithm = "classic", statistic = "fisher")
+table_MF <- GenTable(GOdata_MF, classic = resultFis_MF, orderBy = "classic", ranksOf = "classic", topNodes = length(usedGO(object = GOdata_MF)))
+table_MF$FDR<-p.adjust(as.numeric(table_MF$classic),method="fdr")
+
+# Biological Process
+####################
+resultFis_BP <- runTest(GOdata_BP, algorithm = "classic", statistic = "fisher")
+table_BP <- GenTable(GOdata_BP, classic = resultFis_BP, orderBy = "classic", ranksOf = "classic", topNodes = length(usedGO(object = GOdata_BP)))
+table_BP$FDR<-p.adjust(as.numeric(table_BP$classic),method="holm")
+
+# Cellular Component
+####################
+resultFis_CC <- runTest(GOdata_CC, algorithm = "classic", statistic = "fisher")
+table_CC <- GenTable(GOdata_CC, classic = resultFis_CC, orderBy = "classic", ranksOf = "classic", topNodes = length(usedGO(object = GOdata_CC)))
+table_CC$FDR<-p.adjust(as.numeric(table_CC$classic),method="fdr")
+```
+
+
+```{r}
+# filter out significant GO terms:
+###################################
+
+MF <- subset(table_MF, as.numeric(FDR) < 0.05)
+BP <- subset(table_BP, as.numeric(FDR) < 0.05)
+CC <- subset(table_CC, as.numeric(FDR) < 0.05)
+
+#MF$ontology<-"MF"
+#BP$ontology<-"BP"
+#CC$ontology<-"CC"
 
 MF
 BP

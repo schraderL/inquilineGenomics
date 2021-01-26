@@ -1,0 +1,160 @@
+---
+title: "inquiline genomics: RNAseq data"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+```{r}
+library(rtracklayer)
+library(ggplot2)
+library(dplyr)
+library(cowplot)
+```
+
+
+```{r}
+Acha<-readGFF("/Users/lukas/sciebo/inquilineGenomics18/transcriptome/data/Acromyrmex_charruana.transcripts.gtf")
+Parg<-readGFF("/Users/lukas/sciebo/inquilineGenomics18/transcriptome/data/Pseudoatta_argentina.transcripts.gtf")
+Ains<-readGFF("/Users/lukas/sciebo/inquilineGenomics18/transcriptome/data/Acromyrmex_insinuator.transcripts.gtf")
+Ahey<-readGFF("/Users/lukas/sciebo/inquilineGenomics18/transcriptome/data/Acromyrmex_heyeri.transcripts.gtf")
+
+Ains$species<-"AINS"
+Parg$species<-"PARG"
+Acha$species<-"ACHA"
+Ahey$species<-"AHEY"
+```
+
+
+```{r}
+dfr<-rbind(Ains,Parg,Acha,Ahey)
+df<-dfr
+#df<-subset(dfr,strand!="*")
+
+df$length<-abs(df$end-df$start)
+df$FPKM<-as.numeric(df$FPKM)
+df$cov<-as.numeric(df$cov)
+#df<-subset(df,length>101)
+transcripts<-subset(df,type=="transcript")
+exons<-subset(df,type=="exon")
+genes<-transcripts[!duplicated(transcripts[,c("gene_id","species")]),]
+
+
+exons$bp<-(exons$length)*as.numeric(exons$cov)
+bpSeqE<-aggregate(exons$bp, by=list(Category=exons$species), FUN=sum)
+bpSeqE$GB<-(bpSeqE$x/1000000000)
+bpSeqE$reads<-(bpSeqE$x)/200/1000000
+bpSeqE
+
+transcripts$bp<-(transcripts$length)*as.numeric(transcripts$cov)
+bpSeq<-aggregate(transcripts$bp, by=list(Category=transcripts$species), FUN=sum)
+bpSeq$GB<-(bpSeq$x/1000000000)
+bpSeq$reads<-(bpSeq$x)/300/1000000
+bpSeq
+
+
+goodExons<-subset(exons,strand!="*")
+goodExons<-exons
+covMean<-aggregate(goodExons$cov, by=list(Category=goodExons$species), FUN=median)
+covMean
+
+covSum<-aggregate(goodExons$cov, by=list(Category=goodExons$species), FUN=sum)
+covSum
+
+
+```
+
+# FPKM distribution
+```{r}
+
+
+pF <- ggplot(transcripts, aes(x=log(FPKM,10),color=species,fill=species)) + 
+  geom_density(alpha=.1)+theme_classic()+theme(legend.position = c(0.7,0.7))
+#pF
+```
+
+```{r}
+pLe <- ggplot(subset(df,type=="transcript"), aes(x=log(length,10),color=species,fill=species)) + 
+  geom_density(alpha=.1)+theme_classic()
+pLe<-pLe+theme(legend.position = c(0.7,0.7))
+```
+
+```{r}
+
+tc<-as.data.frame(table(as.factor(transcripts$species)))
+gc<-as.data.frame(table(genes$species))
+ec<-as.data.frame(table(as.factor(exons$species)))
+
+
+colnames(tc)<-c("species","count")
+colnames(gc)<-c("species","count")
+colnames(ec)<-c("species","count")
+
+tc$type<-"transcripts"
+gc$type<-"genes"
+ec$type<-"exons"
+tc$species <- factor(tc$species, levels = c("AHEY","AINS","ACHA","PARG"))
+gc$species <- factor(gc$species, levels = c("AHEY","AINS","ACHA","PARG"))
+ec$species <- factor(ec$species, levels = c("AHEY","AINS","ACHA","PARG"))
+
+co<-rbind(tc,gc)
+
+pC<-ggplot(data=co, aes(x=species, y=count,fill=species)) +
+  geom_bar(stat="identity")+theme_classic()+theme(legend.position = "none", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+facet_wrap(~type)
+
+
+```
+```{r}
+pL <- ggplot(transcripts) + 
+  geom_point(aes(x=log(length,10),y=log(FPKM,10),color=species),alpha=.01,size=.5)
+pL<-pL+facet_wrap(~ species)+theme_classic()+theme(legend.position = "none")
+#pL
+
+```
+
+```{r}
+pL<-ggplot(transcripts, aes(x=log(length,10), y=log(FPKM,10)),alpha=.5) +
+  geom_hex(bins = 100) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw()+facet_wrap(~species)
+```
+
+
+```{r}
+
+p1<-plot_grid(pF,pLe+theme(legend.position = "none"),pC,ncol=1,rel_heights = c(0.35,0.35,0.3))
+#p2<-plot_grid(pLe, pT,nrow=2)
+#p3<-plot_grid(p1,p2,ncol=2)
+plot_grid(p1,pL)
+#dev.print(pdf, "/Users/lukas/sciebo/inquilineGenomics18/transcriptome/RNAseqQC.pdf",width=8, height=6)
+```
+

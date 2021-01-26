@@ -1,0 +1,226 @@
+---
+title: "Inquiline Genomics: GO enrichment analysis of CAFE gene families"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    collapsed: true
+    number_sections: true
+    df_print: paged
+  pdf_document: default
+---
+<STYLE TYPE="text/css">
+<!--
+  td{
+    font-family: Arial; 
+    font-size: 8pt;
+    padding:0px;
+    cellpadding="0";
+    cellspacing="0"
+  }
+  th {
+    font-family: Arial; 
+    font-size: 8pt;
+    height: 20px;
+    font-weight: bold;
+    text-align: right;
+    background-color: #ccccff;
+  }
+  table { 
+    border-spacing: 0px;
+    border-collapse: collapse;
+  }
+--->
+</STYLE>
+
+# R steps
+```{r include=FALSE}
+#source("https://bioconductor.org/biocLite.R")
+#biocLite("GO.db")
+library("topGO")
+library(dplyr)
+library(plyr)
+library(tidyr)
+```
+
+### Read large input table
+```{r}
+all<-read.csv("/Users/lukas/sciebo/inquilineGenomics18/geneFamilies/CAFE/results/Acro.Atta/bestModel.m6b.RUN4c.tsv",sep="\t")
+```
+
+### create topGO element for Cluster GO annotations
+```{r}
+
+clusterID2go<-list()
+for(i in 1:length(all$ClusterID)){
+  clusterID2go[[i]]<-unlist(strsplit(as.character(all$uniqueGOs[i]),", "))
+  names(clusterID2go)[i]<-as.character(all$ClusterID[i])
+}
+```
+
+### Prepare Objects for GO enrichment analysis
+```{r}
+
+clusterNames.all<-names(clusterID2go)
+#restrict gene space to tested clusters orthologs
+clusterNames<-clusterNames.all
+clusterNames<-clusterNames.all[clusterNames.all %in% subset(all,!is.na(X.Family.wide.P.value.))$ClusterID]
+
+clusterNames <- factor(clusterNames)
+names(clusterNames) <- clusterNames
+
+```
+
+
+### Select Clusters of Interest from dataframe "all".
+```{r}
+# create a 0/1 matrix (interesting/not interesting)
+######################################
+
+## all parasites
+#ClustersOfInterest<-unlist(subset(all,AINSp<0.05|PARGp<0.05|ACHAp<0.05|ACHA.PARGp<0.05,ClusterID))
+
+## all Parg and none in hosts
+#ClustersOfInterest<-unlist(subset(all,PARGp<0.05 & AHEY>0.05 & AECH >0.05,ClusterID))
+
+## all hosts
+#ClustersOfInterest<-unlist(subset(all,PARGp>0.05 & AHEY<0.05 & AECH <0.05,ClusterID))
+
+## all AINS
+#ClustersOfInterest<-unlist(subset(all,AINSp<0.05 & AINS<AECH,ClusterID))
+
+## all clusters getting smaller in parasites
+#ClustersOfInterest<-unlist(subset(all,(AINSp<0.05 & AINS<AECH)|(PARGp<0.05 & PARG<AHEY) |(ACHAp<0.05 & ACHA<AHEY)|(ACHA.PARGp<0.05 & PARG<AHEY & ACHA<AHEY),ClusterID))
+
+## origin of parasitism
+#ClustersOfInterest<-unlist(subset(all,(AINSp<0.05 & AINS <= AECH.AINSc & AINSc <= AECHc) & (ACHA.PARGp<0.05 & ACHA.PARGc <= AHEY.ACHA.PARGc & ACHAc <= AHEYc & PARGc <= AHEYc ),ClusterID))
+
+## smaller in parasitism
+#ClustersOfInterest<-unlist(subset(all,(AINS < AECH) & (PARG < AHEY & ACHA < AHEY),ClusterID))
+
+
+## smaller in hosts
+ClustersOfInterest<-unlist(subset(all,(AINS > AECH) | (PARG > AHEY & ACHA > AHEY),ClusterID))
+#ClustersOfInterest<-unlist(subset(all,(AINS > AECH),ClusterID))
+#ClustersOfInterest<-unlist(subset(all,(PARG > AHEY & ACHA > AHEY),ClusterID))
+#ClustersOfInterest<-unlist(subset(all,(PARG > AHEY),ClusterID))
+
+
+## smaller in PARG
+#ClustersOfInterest<-unlist(subset(all,ACHAp<0.1 & (ACHA > AHEY),ClusterID))
+
+clusterList <- factor(as.integer(clusterNames %in% ClustersOfInterest))
+names(clusterList) <- clusterNames
+table(clusterList)
+
+
+```
+```{r}
+#subset(all,ClusterID %in% ClustersOfInterest)
+```
+
+
+```{r}
+# create object for Biological Process, Molecular Function and Cellular component:
+##################################################################################
+
+GOdata_MF <- new("topGOdata", ontology = "MF", allGenes = clusterList, annot = annFUN.gene2GO, gene2GO = clusterID2go)
+GOdata_BP <- new("topGOdata", ontology = "BP", allGenes = clusterList, annot = annFUN.gene2GO, gene2GO = clusterID2go)
+GOdata_CC <- new("topGOdata", ontology = "CC", allGenes = clusterList, annot = annFUN.gene2GO, gene2GO = clusterID2go)
+```
+
+
+```{r}
+# Molecular Function
+####################
+resultFis_MF 	<- runTest(GOdata_MF, algorithm = "parentchild", statistic = "fisher")
+table_MF <- GenTable(GOdata_MF, parentChild = resultFis_MF, orderBy = "parentChild", ranksOf = "parentChild", topNodes = length(usedGO(object = GOdata_MF)))
+table_MF$FDR<-p.adjust(as.numeric(table_MF$parentChild),method="fdr")
+# Biological Process
+####################
+resultFis_BP <- runTest(GOdata_BP, algorithm = "parentchild", statistic = "fisher")
+table_BP <- GenTable(GOdata_BP, parentChild = resultFis_BP, orderBy = "parentChild", ranksOf = "parentChild", topNodes = length(usedGO(object = GOdata_BP)))
+table_BP$FDR<-p.adjust(as.numeric(table_BP$parentChild),method="holm")
+
+# Cellular Component
+####################
+resultFis_CC <- runTest(GOdata_CC, algorithm = "parentchild", statistic = "fisher")
+table_CC <- GenTable(GOdata_CC, parentChild = resultFis_CC, orderBy = "parentChild", ranksOf = "parentChild", topNodes = length(usedGO(object = GOdata_CC)))
+table_CC$FDR<-p.adjust(as.numeric(table_CC$parentChild),method="fdr")
+```
+
+
+```{r}
+# Molecular Function
+####################
+resultFis_MF 	<- runTest(GOdata_MF, algorithm = "classic", statistic = "fisher")
+table_MF <- GenTable(GOdata_MF, classic = resultFis_MF, orderBy = "classic", ranksOf = "classic", topNodes = length(usedGO(object = GOdata_MF)))
+table_MF$FDR<-p.adjust(as.numeric(table_MF$classic),method="fdr")
+
+# Biological Process
+####################
+resultFis_BP <- runTest(GOdata_BP, algorithm = "classic", statistic = "fisher")
+table_BP <- GenTable(GOdata_BP, classic = resultFis_BP, orderBy = "classic", ranksOf = "classic", topNodes = length(usedGO(object = GOdata_BP)))
+table_BP$FDR<-p.adjust(as.numeric(table_BP$classic),method="holm")
+
+# Cellular Component
+####################
+resultFis_CC <- runTest(GOdata_CC, algorithm = "classic", statistic = "fisher")
+table_CC <- GenTable(GOdata_CC, classic = resultFis_CC, orderBy = "classic", ranksOf = "classic", topNodes = length(usedGO(object = GOdata_CC)))
+table_CC$FDR<-p.adjust(as.numeric(table_CC$classic),method="fdr")
+```
+
+
+```{r}
+# filter out significant GO terms:
+###################################
+
+MF <- subset(table_MF, as.numeric(FDR) < 0.05)
+BP <- subset(table_BP, as.numeric(FDR) < 0.05)
+CC <- subset(table_CC, as.numeric(FDR) < 0.05)
+
+#MF$ontology<-"MF"
+#BP$ontology<-"BP"
+#CC$ontology<-"CC"
+
+MF
+BP
+CC
+```
+```{r}
+```
+
+
+
+### write to file
+```{r}
+# Origins of social parasitism, significant families
+#res<-rbind(MF,BP) %>% rbind(.,CC)
+#outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.CAFE.parasiteOrigins.tsv"
+#write.table(res,outfile,quote=F,sep="\t",row.names = F)
+#cat("# GO enrichment of gene families significantly (p<0.05) smaller at both origins or parasitism. \n",file=outfile)
+#write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
+
+
+# All families smaller in parasite species than host species
+res<-rbind(MF,BP) %>% rbind(.,CC)
+outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.CAFE.parasites.revision.tsv"
+write.table(res,outfile,quote=F,sep="\t",row.names = F)
+cat("# GO enrichment of gene families smaller in parasites than in hosts. \n",file=outfile)
+write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
+
+
+```
+
+
+
+
+```{r}
+#tmp<-unlist(subset(all,OGid %in% genesInTerm(GOdata_MF, "GO:0060089")[[1]],OGid))
+subset(all,ClusterID %in% genesInTerm(GOdata_MF, "GO:0016298")[[1]] & PARG<AHEY)
+
+
+```
+
+
