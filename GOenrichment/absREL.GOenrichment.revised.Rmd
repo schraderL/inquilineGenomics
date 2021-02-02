@@ -157,7 +157,7 @@ table_MF$FDR<-p.adjust(as.numeric(table_MF$classic),method="fdr")
 ####################
 resultFis_BP <- runTest(GOdata_BP, algorithm = "classic", statistic = "fisher")
 table_BP <- GenTable(GOdata_BP, classic = resultFis_BP, orderBy = "classic", ranksOf = "classic", topNodes = length(usedGO(object = GOdata_BP)))
-table_BP$FDR<-p.adjust(as.numeric(table_BP$classic),method="holm")
+table_BP$FDR<-p.adjust(as.numeric(table_BP$classic),method="fdr")
 
 # Cellular Component
 ####################

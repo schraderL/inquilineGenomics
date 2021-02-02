@@ -38,10 +38,22 @@ output:
 ```{r include=FALSE}
 #source("https://bioconductor.org/biocLite.R")
 #biocLite("GO.db")
-library("topGO")
+library("topGO") #2020-05-02
 library(dplyr)
 library(plyr)
 library(tidyr)
+
+#GODb object:
+#| GOSOURCENAME: Gene Ontology
+#| GOSOURCEURL: http://current.geneontology.org/ontology/go-basic.obo
+#| GOSOURCEDATE: 2020-05-02
+#| Db type: GODb
+#| package: AnnotationDbi
+#| DBSCHEMA: GO_DB
+#| GOEGSOURCEDATE: 2019-Jul10
+#| GOEGSOURCENAME: Entrez Gene
+#| GOEGSOURCEURL: ftp://ftp.ncbi.nlm.nih.gov/gene/DATA
+#| DBSCHEMAVERSION: 2.1
 ```
 
 ### Read large input table
@@ -97,11 +109,11 @@ names(clusterNames) <- clusterNames
 #ClustersOfInterest<-unlist(subset(all,(AINSp<0.05 & AINS <= AECH.AINSc & AINSc <= AECHc) & (ACHA.PARGp<0.05 & ACHA.PARGc <= AHEY.ACHA.PARGc & ACHAc <= AHEYc & PARGc <= AHEYc ),ClusterID))
 
 ## smaller in parasitism
-#ClustersOfInterest<-unlist(subset(all,(AINS < AECH) & (PARG < AHEY & ACHA < AHEY),ClusterID))
+ClustersOfInterest<-unlist(subset(all,(AINS < AECH) & (PARG < AHEY & ACHA < AHEY),ClusterID))
 
 
 ## smaller in hosts
-ClustersOfInterest<-unlist(subset(all,(AINS > AECH) | (PARG > AHEY & ACHA > AHEY),ClusterID))
+#ClustersOfInterest<-unlist(subset(all,(AINS > AECH) & (PARG > AHEY & ACHA > AHEY),ClusterID))
 #ClustersOfInterest<-unlist(subset(all,(AINS > AECH),ClusterID))
 #ClustersOfInterest<-unlist(subset(all,(PARG > AHEY & ACHA > AHEY),ClusterID))
 #ClustersOfInterest<-unlist(subset(all,(PARG > AHEY),ClusterID))
@@ -136,20 +148,57 @@ GOdata_CC <- new("topGOdata", ontology = "CC", allGenes = clusterList, annot = a
 ####################
 resultFis_MF 	<- runTest(GOdata_MF, algorithm = "parentchild", statistic = "fisher")
 table_MF <- GenTable(GOdata_MF, parentChild = resultFis_MF, orderBy = "parentChild", ranksOf = "parentChild", topNodes = length(usedGO(object = GOdata_MF)))
-table_MF$FDR<-p.adjust(as.numeric(table_MF$parentChild),method="fdr")
+
 # Biological Process
 ####################
 resultFis_BP <- runTest(GOdata_BP, algorithm = "parentchild", statistic = "fisher")
 table_BP <- GenTable(GOdata_BP, parentChild = resultFis_BP, orderBy = "parentChild", ranksOf = "parentChild", topNodes = length(usedGO(object = GOdata_BP)))
-table_BP$FDR<-p.adjust(as.numeric(table_BP$parentChild),method="holm")
+
 
 # Cellular Component
 ####################
 resultFis_CC <- runTest(GOdata_CC, algorithm = "parentchild", statistic = "fisher")
 table_CC <- GenTable(GOdata_CC, parentChild = resultFis_CC, orderBy = "parentChild", ranksOf = "parentChild", topNodes = length(usedGO(object = GOdata_CC)))
-table_CC$FDR<-p.adjust(as.numeric(table_CC$parentChild),method="fdr")
+
 ```
 
+
+```{r}
+# filter out significant GO terms:
+###################################
+
+MF <- subset(table_MF, as.numeric(parentChild) < 0.05)
+BP <- subset(table_BP, as.numeric(parentChild) < 0.05)
+CC <- subset(table_CC, as.numeric(parentChild) < 0.05)
+
+#MF$ontology<-"MF"
+#BP$ontology<-"BP"
+#CC$ontology<-"CC"
+
+MF
+BP
+CC
+```
+
+### write to file
+```{r}
+# Origins of social parasitism, significant families
+#res<-rbind(MF,BP) %>% rbind(.,CC)
+#outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.CAFE.parasiteOrigins.tsv"
+#write.table(res,outfile,quote=F,sep="\t",row.names = F)
+#cat("# GO enrichment of gene families significantly (p<0.05) smaller at both origins or parasitism. \n",file=outfile)
+#write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
+
+
+# All families smaller in parasite species than host species
+res<-rbind(MF,BP) %>% rbind(.,CC)
+outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.CAFE.parasites.revision.tsv"
+write.table(res,outfile,quote=F,sep="\t",row.names = F)
+cat("# GO enrichment of gene families smaller in parasites than in hosts. \n",file=outfile)
+write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
+
+
+```
 
 ```{r}
 # Molecular Function
@@ -172,6 +221,8 @@ table_CC$FDR<-p.adjust(as.numeric(table_CC$classic),method="fdr")
 ```
 
 
+
+
 ```{r}
 # filter out significant GO terms:
 ###################################
@@ -188,10 +239,6 @@ MF
 BP
 CC
 ```
-```{r}
-```
-
-
 
 ### write to file
 ```{r}
@@ -205,7 +252,7 @@ CC
 
 # All families smaller in parasite species than host species
 res<-rbind(MF,BP) %>% rbind(.,CC)
-outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.CAFE.parasites.revision.tsv"
+outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.CAFE.parasites.revision.FDR.tsv"
 write.table(res,outfile,quote=F,sep="\t",row.names = F)
 cat("# GO enrichment of gene families smaller in parasites than in hosts. \n",file=outfile)
 write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
@@ -213,14 +260,5 @@ write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
 
 ```
 
-
-
-
-```{r}
-#tmp<-unlist(subset(all,OGid %in% genesInTerm(GOdata_MF, "GO:0060089")[[1]],OGid))
-subset(all,ClusterID %in% genesInTerm(GOdata_MF, "GO:0016298")[[1]] & PARG<AHEY)
-
-
-```
 
 

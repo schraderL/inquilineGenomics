@@ -103,8 +103,8 @@ length(unlist(subset(all,p.adjust(pval,method = "fdr")<0.1 & p.adjust(pval,metho
 #SCOOfInterest<-unlist(subset(all,p.adjust(P1pv,method = "fdr")<0.05 | p.adjust(AINSpv,method = "fdr")<0.05 | p.adjust(PARGpv,method = "fdr")<0.05 | p.adjust(ACHApv,method = "fdr")<0.05,OGid))
 
 # Origin of parasitism
-SCOOfInterest<-unlist(subset(all,p.adjust(pval,method = "fdr")<0.1 & k<1,OGid))
-#SCOOfInterest<-unlist(subset(all,p.adjust(pval,method = "fdr")<0.1 & k>1,OGid))
+#SCOOfInterest<-unlist(subset(all,p.adjust(pval,method = "fdr")<0.1 & k<1,OGid))
+SCOOfInterest<-unlist(subset(all,p.adjust(pval,method = "fdr")<0.1 & k>1,OGid))
 
 #SCOOfInterest<-unlist(subset(all,p.adjust(PARGpv,method = "fdr")<0.05 ,OGid))
 #SCOOfInterest<-unlist(subset(all,p.adjust(ACHApv,method = "fdr")<0.05 ,OGid))
@@ -127,7 +127,10 @@ relaxedSelSet<-subset(all,OGid %in% SCOOfInterest)
 GOdata_MF <- new("topGOdata", ontology = "MF", allGenes = scoList, annot = annFUN.gene2GO, gene2GO = scoID2go)
 GOdata_BP <- new("topGOdata", ontology = "BP", allGenes = scoList, annot = annFUN.gene2GO, gene2GO = scoID2go)
 GOdata_CC <- new("topGOdata", ontology = "CC", allGenes = scoList, annot = annFUN.gene2GO, gene2GO = scoID2go)
+```
 
+
+```{r}
 # Molecular Function
 ####################
 resultFis_MF 	<- runTest(GOdata_MF, algorithm = "parentchild", statistic = "fisher")
@@ -143,6 +146,41 @@ table_BP <- GenTable(GOdata_BP, parentChild = resultFis_BP, orderBy = "parentChi
 ####################
 resultFis_CC <- runTest(GOdata_CC, algorithm = "parentchild", statistic = "fisher")
 table_CC <- GenTable(GOdata_CC, parentChild = resultFis_CC, orderBy = "parentChild", ranksOf = "parentChild", topNodes = 200)
+
+# filter out significant GO terms:
+###################################
+
+MF <- subset(table_MF, as.numeric(parentChild) < 0.05)
+BP <- subset(table_BP, as.numeric(parentChild) < 0.05)
+CC <- subset(table_CC, as.numeric(parentChild) < 0.05)
+
+
+
+MF$ontology<-"MF"
+BP$ontology<-"BP"
+CC$ontology<-"CC"
+
+MF
+BP
+CC
+```
+
+
+### save results to file
+```{r}
+# Origins of social parasitism
+res<-rbind(MF,BP) %>% rbind(.,CC)
+#outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.RELAX2.parasiteOrigins.relaxedSelection.revision.tsv"
+outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.RELAX2.parasiteOrigins.intensifiedSelection.revision.tsv"
+write.table(res,outfile,quote=F,sep="\t",row.names = F)
+#cat("# GO enrichment of genes under relaxed selection (p<0.1, k<1) at any social parasite branch (at FDR<0.1), compared to Ahey, Aech, A1 and A2. \n",file=outfile)
+cat("# GO enrichment of genes under intensified selection (p<0.05, k<1) at any social parasite branch (at FDR<0.1), compared to all other branches. \n",file=outfile)
+write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
+
+
+```
+
+```{r}
 
 # Molecular Function
 ####################
@@ -172,31 +210,26 @@ CC <- subset(table_CC, as.numeric(FDR) < 0.05)
 
 
 
-MF$ontology<-"MF"
-BP$ontology<-"BP"
-CC$ontology<-"CC"
+#MF$ontology<-"MF"
+#BP$ontology<-"BP"
+#CC$ontology<-"CC"
 
 MF
 BP
 CC
 ```
-```{r}
 
-subset(all,OGid %in% genesInTerm(GOdata_BP, "GO:0046903")[[1]] & pval<0.05)
-subset(all,OGid %in% genesInTerm(GOdata_MF, "GO:0005158")[[1]] & pval<0.05)
-subset(all,OGid %in% genesInTerm(GOdata_CC, "GO:0038201")[[1]] & pval<0.05)
 
-```
 
 ### save results to file
 ```{r}
 # Origins of social parasitism
 res<-rbind(MF,BP) %>% rbind(.,CC)
-#outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.RELAX2.parasiteOrigins.relaxedSelection.tsv"
-outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.RELAX2.parasiteOrigins.intensifiedSelection.tsv"
+outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.RELAX2.parasiteOrigins.relaxedSelection.revision.FDR.tsv"
+#outfile<-"/Users/lukas/sciebo/inquilineGenomics18/GOenrichment/results/GOenrichment.RELAX2.parasiteOrigins.intensifiedSelection.revision.FDR.tsv"
 write.table(res,outfile,quote=F,sep="\t",row.names = F)
-cat("# GO enrichment of genes under relaxed selection (p<0.1, k<1) at any social parasite branch (at FDR<0.1), compared to Ahey, Aech, A1 and A2. \n",file=outfile)
-#cat("# GO enrichment of genes under relaxed selection (p<0.05, k<1) at any social parasite branch (at FDR<0.1), compared to all other branches. \n",file=outfile)
+#cat("# GO enrichment of genes under relaxed selection (p<0.1, k<1) at any social parasite branch (at FDR<0.1), compared to Ahey, Aech, A1 and A2. \n",file=outfile)
+cat("# GO enrichment of genes under relaxed selection (p<0.05, k<1) at any social parasite branch (at FDR<0.1), compared to all other branches. \n",file=outfile)
 write.table(res, outfile,append=TRUE, quote=F,sep="\t",row.names=F)
 
 
